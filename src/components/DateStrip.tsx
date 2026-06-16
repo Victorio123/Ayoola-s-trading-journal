@@ -142,30 +142,22 @@ export default function DateStrip({ selectedDateFilter, onSelectDateFilter, trad
               iconComponent = <HelpCircle size={14} className={isSelected ? 'text-zinc-950' : 'text-zinc-450 text-zinc-400'} />;
             }
           } else {
-            // NO trades logged on this day yet - fall back to the color specification:
-            // "today as red and next 7 days as green"
+            // NO trades logged on this day - style as neutral gray/zinc
+            cardBgStyle = isSelected
+              ? 'bg-zinc-800 text-zinc-100 shadow-xl shadow-zinc-950/40 border-zinc-700'
+              : 'bg-zinc-900/40 hover:bg-zinc-900/80 text-zinc-400';
+            borderStyle = isSelected ? 'border-zinc-700 ring-2 ring-zinc-800' : 'border-zinc-900 hover:border-zinc-800';
+            plTextStyle = isSelected ? 'text-zinc-300 font-extrabold text-base' : 'text-zinc-500 font-bold text-xs';
+            statusPrompt = 'No Trades Logged';
+            
             if (day.isToday) {
-              // Today without trades is styled as RED
-              cardBgStyle = isSelected
-                ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-xl shadow-rose-950/40'
-                : 'bg-rose-950/20 hover:bg-rose-950/30 text-rose-200';
-              borderStyle = isSelected ? 'border-white ring-2 ring-rose-400' : 'border-rose-900/60 hover:border-rose-850';
-              plTextStyle = isSelected ? 'text-white font-black text-lg' : 'text-rose-400 font-extrabold text-base';
-              statusPrompt = 'No Trades Logged Yet';
               statusBadgeText = 'TODAY';
-              statusBadgeClass = 'bg-rose-500 text-white animate-pulse';
-              iconComponent = <Ban size={13} className="text-rose-400 animate-spin" style={{ animationDuration: '3s' }} />;
+              statusBadgeClass = isSelected ? 'bg-zinc-950 text-zinc-400' : 'bg-zinc-800/80 text-zinc-400 border border-zinc-800';
+              iconComponent = <Ban size={13} className="text-zinc-500 animate-pulse" />;
             } else {
-              // Future/Next 7 days without trades are styled as GREEN (upcoming setups allowed)
-              cardBgStyle = isSelected
-                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-zinc-950 shadow-lg shadow-emerald-500/20'
-                : 'bg-emerald-950/10 hover:bg-emerald-950/20 text-emerald-200/80';
-              borderStyle = isSelected ? 'border-white ring-2 ring-emerald-400' : 'border-emerald-950/60 hover:border-emerald-900/60';
-              plTextStyle = isSelected ? 'text-zinc-950 font-black text-lg' : 'text-emerald-500/80 font-bold text-sm';
-              statusPrompt = 'Future Setup Open';
-              statusBadgeText = 'UPCOMING';
-              statusBadgeClass = 'bg-emerald-950/80 text-emerald-400 border border-emerald-900/50';
-              iconComponent = <Sparkles size={13} className="text-emerald-550 text-emerald-500" />;
+              statusBadgeText = 'NEUTRAL';
+              statusBadgeClass = isSelected ? 'bg-zinc-950 text-zinc-500' : 'bg-zinc-900 border border-zinc-850/60 text-zinc-500';
+              iconComponent = <HelpCircle size={13} className="text-zinc-650 text-zinc-500" />;
             }
           }
 

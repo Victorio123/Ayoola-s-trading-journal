@@ -11,7 +11,9 @@ import {
   Sparkles,
   TrendingUp,
   TrendingDown,
-  Filter
+  Filter,
+  LogOut,
+  User
 } from 'lucide-react';
 import { Trade, TradingStats } from './types';
 import StatsDashboard from './components/StatsDashboard';
@@ -19,6 +21,7 @@ import DateStrip from './components/DateStrip';
 import TradeForm from './components/TradeForm';
 import PsychologyInsights from './components/PsychologyInsights';
 import TradesTable from './components/TradesTable';
+import GoogleLogin from './components/GoogleLogin';
 
 // Premium high-fidelity seed data
 const DEMO_TRADES: Omit<Trade, 'id'>[] = [
@@ -34,54 +37,53 @@ const DEMO_TRADES: Omit<Trade, 'id'>[] = [
 ];
 
 export default function App() {
+  const [user, setUser] = useState<{ email: string; name: string; avatar: string } | null>(() => {
+    const saved = localStorage.getItem('tradezella_journal_user');
+    try {
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [trades, setTrades] = useState<Trade[]>([]);
   const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [utcTime, setUtcTime] = useState('');
   const [showNotification, setShowNotification] = useState<string | null>(null);
 
-  // Initialize data from local storage
+  // Initialize data from local storage, partitioned by user email
   useEffect(() => {
-    const saved = localStorage.getItem('tradezella_journal_trades');
+    if (!user) {
+      setIsLoaded(true);
+      return;
+    }
+    
+    setIsLoaded(false);
+    const storageKey = `tradezella_journal_trades_${user.email}`;
+    const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
-        let loadedTrades = JSON.parse(saved);
-        // Ensure today (2026-06-16) contains the exact beautiful trade if not already here
-        const hasTodayTrade = loadedTrades.some((t: Trade) => t.date === '2026-06-16');
-        if (!hasTodayTrade) {
-          const todaySeed: Trade = {
-            id: 'today-auto-seed-16',
-            pair: 'NAS100',
-            type: 'BUY',
-            risk: 250,
-            pl: 620,
-            emotion: 'Disciplined',
-            date: '2026-06-16',
-            notes: 'High volume morning breakout of Asia Session High. Perfect execution and patience.'
-          };
-          loadedTrades = [todaySeed, ...loadedTrades];
-        }
+        const loadedTrades = JSON.parse(saved);
         setTrades(loadedTrades);
       } catch (err) {
         console.error('Failed reading trades from local storage:', err);
+        setTrades([]);
       }
     } else {
-      // Load initial seed trades so the user is immediately greeted with beautiful visual dashboard charts!
-      const initialSeed: Trade[] = DEMO_TRADES.map((d, index) => ({
-        ...d,
-        id: `seed-id-${index + 1}`
-      }));
-      setTrades(initialSeed);
+      // Clean slate! Starting balance starts at exactly $0.00!
+      setTrades([]);
     }
     setIsLoaded(true);
-  }, []);
+  }, [user]);
 
   // Save to local storage whenever trades state updates
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('tradezella_journal_trades', JSON.stringify(trades));
+    if (isLoaded && user) {
+      const storageKey = `tradezella_journal_trades_${user.email}`;
+      localStorage.setItem(storageKey, JSON.stringify(trades));
     }
-  }, [trades, isLoaded]);
+  }, [trades, isLoaded, user]);
 
   // Sync Live UTC Clock (crucial for retail & institutional session tracking)
   useEffect(() => {
@@ -193,6 +195,37 @@ export default function App() {
     triggerNotification("Cleared all trade logs completely. Database is fresh.");
   };
 
+  const handleSignOut = () => {
+    localStorage.removeItem('tradezella_journal_user');
+    setUser(null);
+    setTrades([]);
+    setSelectedDateFilter(null);
+    triggerNotification("Signed out of Google session.");
+  };
+
+  if (!user) {
+    return (
+      <>
+        {showNotification && (
+          <div 
+            id="system-banner-notification"
+            className="fixed bottom-4 right-4 z-50 bg-zinc-900 border border-emerald-500/40 text-emerald-400 pl-4 pr-5 py-3 rounded-lg shadow-2xl flex items-center gap-2.5 text-xs font-semibold animate-fade-in-up duration-350 transition-all backdrop-blur-md"
+          >
+            <CheckCircle size={15} className="text-emerald-400" />
+            <span>{showNotification}</span>
+          </div>
+        )}
+        <GoogleLogin 
+          onSuccess={(loggedUser) => {
+            localStorage.setItem('tradezella_journal_user', JSON.stringify(loggedUser));
+            setUser(loggedUser);
+            triggerNotification(`Welcome, ${loggedUser.name}! Secure session established.`);
+          }}
+        />
+      </>
+    );
+  }
+
   return (
     <div id="main-trading-journal-app" className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-emerald-500 selection:text-zinc-950">
       
@@ -219,18 +252,34 @@ export default function App() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-black font-display tracking-tight text-white uppercase">
-                  ZELLA JOURNAL
+                  Journaly
                 </h1>
                 <span className="text-[9px] uppercase font-bold text-emerald-400 border border-emerald-550/30 px-1 py-0.5 rounded leading-none">
                   Prop Elite
                 </span>
               </div>
-              <p className="text-[10px] text-zinc-500 font-medium">Cognitive Psychology Trading Dashboard</p>
+              <p className="text-[10px] text-emerald-400 font-extrabold tracking-wider uppercase">Trade. Review. Improve.</p>
             </div>
           </div>
 
           {/* Time & Quick Utility Actions */}
           <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-zinc-400">
+            {/* User Session Profile tag */}
+            {user && (
+              <div id="user-profile-badge" className="flex items-center gap-2.5 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-xl">
+                <img src={user.avatar} alt={user.name} className="w-5 h-5 rounded-full object-cover border border-emerald-500/40" />
+                <span className="text-[11px] font-bold text-zinc-200">{user.email}</span>
+                <button
+                  onClick={handleSignOut}
+                  className="ml-1 text-zinc-500 hover:text-rose-400 transition-colors p-0.5 cursor-pointer flex items-center justify-center"
+                  title="Sign out of Google Session"
+                  id="btn-google-signout"
+                >
+                  <LogOut size={13} />
+                </button>
+              </div>
+            )}
+
             {/* Live UTC Clock */}
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900/60 border border-zinc-850 rounded-lg text-emerald-400 font-mono text-[11px]" title="Institutional standard trading time">
               <Clock size={12} className="text-emerald-400" />
@@ -261,23 +310,14 @@ export default function App() {
             </div>
           </div>
 
+
         </div>
       </header>
 
       {/* Main Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6" id="dashboard-container-body">
         
-        {/* Core Instructions Hint for empty state */}
-        {trades.length === 0 && (
-          <div className="bg-gradient-to-r from-emerald-950/20 to-teal-950/10 border border-emerald-900/30 p-4 rounded-xl text-xs text-zinc-350 flex items-start gap-3" id="blank-slate-instruction-box">
-            <Sparkles className="text-emerald-400 shrink-0 mt-0.5" size={16} />
-            <div>
-              <span className="font-bold text-white block mb-0.5">Welcome to your clean trading ledger!</span>
-              Your database is completely empty. You can write your own custom trades below, or click 
-              <button onClick={handleLoadDemo} className="text-emerald-450 underline ml-1 font-semibold hover:text-emerald-400">Load Seed Trades</button> in the header to instantly fill the screen with pre-calculated psychological data.
-            </div>
-          </div>
-        )}
+
 
         {/* 1. TOP ANALYTICS DASHBOARD - STYLED CARDS (THE ABSOLUTE HIGHEST PRIORITY REQ) */}
         <section aria-label="Analytical Overview" id="section-metrics-hud">
@@ -321,7 +361,7 @@ export default function App() {
       <footer className="border-t border-zinc-900 bg-zinc-950 mt-12 py-6 text-center text-[10px] text-zinc-600" id="app-footer">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-3">
           <div>
-            &copy; 2026 Zella Journal Inc. All trade records kept client-side within browser LocalStorage.
+            &copy; 2026 Journaly Inc. All trade records kept client-side within browser LocalStorage.
           </div>
           <div className="flex gap-4">
             <span className="hover:text-zinc-500 transition-colors">Risk Warning: Derivates carry high loss thresholds.</span>
