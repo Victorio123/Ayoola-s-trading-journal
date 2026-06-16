@@ -146,8 +146,8 @@ export default function TradeForm({ onAddTrade }: TradeFormProps) {
               type="button"
               className={`py-2 rounded-lg text-xs font-bold font-display transition-all border ${
                 direction === 'BUY'
-                  ? 'bg-emerald-500/10 text-emerald-450 border-emerald-500/50 shadow-sm shadow-emerald-900/10'
-                  : 'bg-zinc-950 text-zinc-400 border-zinc-850 hover:bg-zinc-800'
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50 shadow-sm shadow-emerald-900/10'
+                  : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:bg-zinc-800'
               }`}
               onClick={() => setDirection('BUY')}
             >
@@ -157,8 +157,8 @@ export default function TradeForm({ onAddTrade }: TradeFormProps) {
               type="button"
               className={`py-2 rounded-lg text-xs font-bold font-display transition-all border ${
                 direction === 'SELL'
-                  ? 'bg-rose-500/10 text-rose-450 border-rose-500/50 shadow-sm shadow-rose-900/10'
-                  : 'bg-zinc-950 text-zinc-400 border-zinc-850 hover:bg-zinc-800'
+                  ? 'bg-rose-500/10 text-rose-400 border-rose-500/50 shadow-sm shadow-rose-900/10'
+                  : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:bg-zinc-800'
               }`}
               onClick={() => setDirection('SELL')}
             >
@@ -208,7 +208,7 @@ export default function TradeForm({ onAddTrade }: TradeFormProps) {
                 type="button"
                 className={`text-[9px] font-bold px-1.5 py-0.5 rounded transition-all ${
                   plType === 'LOSS' 
-                    ? 'bg-rose-505 bg-rose-500 text-zinc-950 shadow-sm' 
+                    ? 'bg-rose-500 text-zinc-950 shadow-sm' 
                     : 'text-zinc-500 bg-zinc-950'
                 }`}
                 onClick={() => setPlType('LOSS')}
@@ -217,7 +217,7 @@ export default function TradeForm({ onAddTrade }: TradeFormProps) {
               </button>
             </div>
             <div className="relative">
-              <span className="absolute left-3 top-2.5 text-zinc-505 font-mono text-xs text-zinc-550">
+              <span className="absolute left-3 top-2.5 text-zinc-500 font-mono text-xs">
                 {plType === 'WIN' ? '+' : '-'}$
               </span>
               <input

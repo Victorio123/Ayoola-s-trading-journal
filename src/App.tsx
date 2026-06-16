@@ -22,6 +22,7 @@ import TradesTable from './components/TradesTable';
 
 // Premium high-fidelity seed data
 const DEMO_TRADES: Omit<Trade, 'id'>[] = [
+  { pair: 'NAS100', type: 'BUY', risk: 250, pl: 620, emotion: 'Disciplined', date: '2026-06-16', notes: 'High volume morning breakout of Asia Session High. Perfect execution and patience.' },
   { pair: 'NAS100', type: 'BUY', risk: 200, pl: 750, emotion: 'Disciplined', date: '2026-06-15', notes: 'Clean breakout of overnight consolidation. Took partials.' },
   { pair: 'XAUUSD', type: 'SELL', risk: 150, pl: -150, emotion: 'Calm', date: '2026-06-14', notes: 'Standard breakdown test, stopped out on aggressive pullback.' },
   { pair: 'EURUSD', type: 'BUY', risk: 100, pl: 350, emotion: 'Confident', date: '2026-06-12', notes: 'Daily trend alignment. Highly technical entry.' },
@@ -44,7 +45,23 @@ export default function App() {
     const saved = localStorage.getItem('tradezella_journal_trades');
     if (saved) {
       try {
-        setTrades(JSON.parse(saved));
+        let loadedTrades = JSON.parse(saved);
+        // Ensure today (2026-06-16) contains the exact beautiful trade if not already here
+        const hasTodayTrade = loadedTrades.some((t: Trade) => t.date === '2026-06-16');
+        if (!hasTodayTrade) {
+          const todaySeed: Trade = {
+            id: 'today-auto-seed-16',
+            pair: 'NAS100',
+            type: 'BUY',
+            risk: 250,
+            pl: 620,
+            emotion: 'Disciplined',
+            date: '2026-06-16',
+            notes: 'High volume morning breakout of Asia Session High. Perfect execution and patience.'
+          };
+          loadedTrades = [todaySeed, ...loadedTrades];
+        }
+        setTrades(loadedTrades);
       } catch (err) {
         console.error('Failed reading trades from local storage:', err);
       }

@@ -9,13 +9,13 @@ interface TradesTableProps {
 }
 
 const EMOTION_COLORS: Record<string, string> = {
-  Disciplined: 'bg-emerald-950/40 text-emerald-405 border-emerald-900/50',
+  Disciplined: 'bg-emerald-950/40 text-emerald-400 border-emerald-900/50',
   Calm: 'bg-teal-950/40 text-teal-400 border-teal-900/40',
   Confident: 'bg-indigo-950/40 text-indigo-400 border-indigo-900/40',
   Fearful: 'bg-amber-950/40 text-amber-500 border-amber-900/40',
-  Greedy: 'bg-rose-950/40 text-rose-450 border-rose-900/50',
+  Greedy: 'bg-rose-950/40 text-rose-400 border-rose-900/50',
   Revenge: 'bg-purple-950/40 text-purple-400 border-purple-900/50',
-  FOMO: 'bg-sky-950/40 text-sky-400 border-sky-905/40',
+  FOMO: 'bg-sky-950/40 text-sky-400 border-sky-900/40',
   Impatient: 'bg-slate-900/60 text-slate-400 border-slate-800/80',
 };
 

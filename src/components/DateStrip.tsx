@@ -1,4 +1,4 @@
-import { Calendar as CalendarIcon, Check, FilterX, HelpCircle, AlertCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Check, FilterX, HelpCircle, AlertCircle, Sparkles, TrendingUp, TrendingDown, Ban } from 'lucide-react';
 import { Trade } from '../types';
 
 interface DateStripProps {
@@ -8,15 +8,14 @@ interface DateStripProps {
 }
 
 export default function DateStrip({ selectedDateFilter, onSelectDateFilter, trades }: DateStripProps) {
-  // Current local time anchor: 2026-06-16.
+  // Current local time anchor: June 16, 2026.
   const todayObj = new Date(2026, 5, 16); // June is index 5
   const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthLabels = ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'];
 
-  // Generate 7 days: 5 past days (-5 to -1), Today (0), and 1 future day (+1)
-  // This covers active demo historical entries perfectly so the user instantly sees live data
-  const daysData = Array.from({ length: 7 }, (_, i) => {
-    const offset = i - 5; // offset starts at -5 and ends at +1
+  // Generate 8 days starting from TODAY (offset 0) to next 7 days (offsets +1 to +7)
+  const daysData = Array.from({ length: 8 }, (_, i) => {
+    const offset = i; // offset starts at 0 (Today) and ends at +7
     const d = new Date(todayObj);
     d.setDate(todayObj.getDate() + offset);
     
@@ -27,38 +26,37 @@ export default function DateStrip({ selectedDateFilter, onSelectDateFilter, trad
     
     const dayName = dayLabels[d.getDay()];
     const dateDay = d.getDate();
-    const monthName = monthLabels[d.getMonth()];
-    
-    // Type description
-    let type: 'past' | 'today' | 'future' = 'future';
-    if (offset < 0) {
-      type = 'past';
-    } else if (offset === 0) {
-      type = 'today';
-    }
+    // Month is indexed relative to the actual generated month
+    const monthName = monthLabels[d.getMonth() === 5 ? 0 : d.getMonth() - 5] || 'Jun';
     
     return {
       dateString,
       dayName,
       dateDay,
       monthName,
-      type,
+      isToday: offset === 0,
+      isFuture: offset > 0,
     };
   });
 
   return (
-    <div id="trading-date-strip" className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl">
-      
+    <div id="trading-date-strip" className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+      {/* Decorative backdrop light effect */}
+      <div className="absolute top-0 right-0 w-80 h-32 bg-emerald-500/5 blur-[80px] pointer-events-none rounded-full" />
+      <div className="absolute bottom-0 left-0 w-80 h-32 bg-rose-500/5 blur-[80px] pointer-events-none rounded-full" />
+
       {/* Header of DateStrip */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 relative z-10 border-b border-zinc-800/60 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-emerald-400">
+            <CalendarIcon size={18} />
+          </div>
           <div>
-            <h3 className="text-xs uppercase font-black font-display tracking-widest text-zinc-300">
-              Session Timeline Calendar
+            <h3 className="text-sm font-black uppercase tracking-wider text-zinc-100 font-display">
+              Vitals &amp; Session Timeline Strip
             </h3>
-            <p className="text-[11px] text-zinc-500 font-medium">
-              Daily visual P/L performance strip. Select a box to filter corresponding setups
+            <p className="text-[11px] text-zinc-400 mt-0.5">
+              Live visual status timeline. Box colors automatically shift dynamically matching logged profit and loss.
             </p>
           </div>
         </div>
@@ -66,20 +64,20 @@ export default function DateStrip({ selectedDateFilter, onSelectDateFilter, trad
         {selectedDateFilter && (
           <button
             onClick={() => onSelectDateFilter(null)}
-            className="text-[10px] font-bold text-rose-400 bg-rose-950/30 hover:bg-rose-900/30 px-3 py-1.5 rounded-lg border border-rose-900/40 flex items-center gap-1.5 transition-all cursor-pointer self-start sm:self-auto"
+            className="text-xs font-bold text-rose-450 text-rose-400 bg-rose-950/40 hover:bg-rose-900/40 px-4 py-2 rounded-xl border border-rose-900/60 flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-rose-950/20 hover:scale-[1.02]"
           >
-            <FilterX size={11} />
-            <span>Show All Dates ({trades.length})</span>
+            <FilterX size={13} />
+            <span>Show All Executions ({trades.length})</span>
           </button>
         )}
       </div>
 
-      {/* Grid containing large boxes */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3.5" id="large-date-boxes">
+      {/* Grid containing jumbo size date boxes */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 relative z-10" id="large-date-boxes">
         {daysData.map((day) => {
           const isSelected = selectedDateFilter === day.dateString;
           
-          // Calculate trades & P/L on this day
+          // Fetch trades for this day
           const dayTrades = trades.filter(t => t.date === day.dateString);
           const tradeCount = dayTrades.length;
           const totalPL = dayTrades.reduce((sum, t) => sum + t.pl, 0);
@@ -92,71 +90,82 @@ export default function DateStrip({ selectedDateFilter, onSelectDateFilter, trad
             return `${prefix}$${Math.abs(val).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
           };
 
-          // Determination of styles (Color align with profit/loss)
+          // Determination of styles (Color align with profit/loss, or fallback today-red / future-green)
           let cardBgStyle = '';
-          let borderStyle = 'border-zinc-800/80';
-          let plTextStyle = 'text-zinc-500';
-          let statusPrompt = 'No Trades';
-          let statusDotStyle = 'bg-zinc-800';
+          let borderStyle = '';
+          let plTextStyle = '';
+          let statusPrompt = '';
+          let statusBadgeText = '';
+          let statusBadgeClass = '';
+          let iconComponent = null;
 
           if (hasTrades) {
+            // Live execution found on this day - color align with profit / loss!
             if (totalPL > 0) {
-              // Profitable Day (GREEN alignment)
+              // Profitable Day (GREEN)
               cardBgStyle = isSelected
-                ? 'bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-950/40'
-                : 'bg-emerald-950/40 hover:bg-emerald-950/65 text-emerald-100';
-              borderStyle = isSelected ? 'border-zinc-100' : 'border-emerald-500/60';
-              plTextStyle = isSelected ? 'text-zinc-950 font-black' : 'text-emerald-400 font-bold';
-              statusPrompt = `${tradeCount} Win${tradeCount > 1 ? 's' : ''} logged`;
-              statusDotStyle = 'bg-emerald-405 bg-emerald-400';
+                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-zinc-950 shadow-lg shadow-emerald-500/20'
+                : 'bg-emerald-950/30 hover:bg-emerald-950/50 text-emerald-100';
+              borderStyle = isSelected ? 'border-zinc-100 ring-2 ring-emerald-400' : 'border-emerald-500/50 hover:border-emerald-400';
+              plTextStyle = isSelected ? 'text-zinc-950 font-black text-lg' : 'text-emerald-400 font-extrabold text-base';
+              
+              // Find first trade info for prompt details
+              const mainTrade = dayTrades[0];
+              statusPrompt = `${mainTrade.pair} ${mainTrade.type} (${mainTrade.emotion})`;
+              statusBadgeText = `${tradeCount} Win${tradeCount > 1 ? 's' : ''}`;
+              statusBadgeClass = isSelected ? 'bg-zinc-950 text-emerald-400' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+              iconComponent = <TrendingUp size={14} className={isSelected ? 'text-zinc-950' : 'text-emerald-400'} />;
             } else if (totalPL < 0) {
-              // Losing Day (RED alignment)
+              // Losing Day (RED)
               cardBgStyle = isSelected
-                ? 'bg-rose-500 text-zinc-950 shadow-lg shadow-rose-950/40'
-                : 'bg-rose-950/40 hover:bg-rose-950/65 text-rose-100';
-              borderStyle = isSelected ? 'border-zinc-100' : 'border-rose-500/60';
-              plTextStyle = isSelected ? 'text-zinc-950 font-black' : 'text-red-400 font-bold';
-              statusPrompt = `${tradeCount} Loss${tradeCount > 1 ? 'es' : ''} logged`;
-              statusDotStyle = 'bg-red-405 bg-red-500';
+                ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-zinc-950 shadow-lg shadow-rose-500/20'
+                : 'bg-rose-950/30 hover:bg-rose-950/50 text-rose-100';
+              borderStyle = isSelected ? 'border-zinc-100 ring-2 ring-rose-400' : 'border-rose-500/50 hover:border-rose-400';
+              plTextStyle = isSelected ? 'text-zinc-950 font-black text-lg' : 'text-rose-400 font-extrabold text-base';
+              
+              const mainTrade = dayTrades[0];
+              statusPrompt = `${mainTrade.pair} ${mainTrade.type} (${mainTrade.emotion})`;
+              statusBadgeText = `${tradeCount} Loss${tradeCount > 1 ? 'es' : ''}`;
+              statusBadgeClass = isSelected ? 'bg-zinc-950 text-rose-400' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
+              iconComponent = <TrendingDown size={14} className={isSelected ? 'text-zinc-950' : 'text-rose-400'} />;
             } else {
-              // Breakeven Day (NEUTRAL gray alignment)
+              // Breakeven Day (Neutral gray/yellow alignment)
               cardBgStyle = isSelected
-                ? 'bg-zinc-600 text-zinc-950 text-white'
-                : 'bg-zinc-800/60 hover:bg-zinc-800 text-zinc-350';
-              borderStyle = isSelected ? 'border-zinc-150' : 'border-zinc-700';
-              plTextStyle = isSelected ? 'text-zinc-950 font-black' : 'text-zinc-400 font-bold';
-              statusPrompt = 'Breakeven';
-              statusDotStyle = 'bg-zinc-400';
+                ? 'bg-gradient-to-br from-zinc-500 to-zinc-600 text-zinc-950 shadow-lg shadow-zinc-500/20'
+                : 'bg-zinc-800/40 hover:bg-zinc-850 text-zinc-300';
+              borderStyle = isSelected ? 'border-zinc-100 ring-2 ring-zinc-400' : 'border-zinc-700 hover:border-zinc-600';
+              plTextStyle = isSelected ? 'text-zinc-950 font-black text-lg' : 'text-zinc-400 font-extrabold text-base';
+              
+              statusPrompt = 'Breakeven Executed';
+              statusBadgeText = 'Neutral';
+              statusBadgeClass = isSelected ? 'bg-zinc-950 text-zinc-400' : 'bg-zinc-800 text-zinc-400';
+              iconComponent = <HelpCircle size={14} className={isSelected ? 'text-zinc-950' : 'text-zinc-450 text-zinc-400'} />;
             }
           } else {
-            // Under default guidelines with NO trades:
-            // TODAY = RED background
-            // FUTURE = GREEN background
-            // PAST = dark grey
-            if (day.type === 'today') {
+            // NO trades logged on this day yet - fall back to the color specification:
+            // "today as red and next 7 days as green"
+            if (day.isToday) {
+              // Today without trades is styled as RED
               cardBgStyle = isSelected
-                ? 'bg-rose-500 text-white shadow-md shadow-rose-950/40'
-                : 'bg-rose-950/20 hover:bg-rose-950/40 text-rose-200';
-              borderStyle = isSelected ? 'border-white' : 'border-rose-900/65';
-              plTextStyle = isSelected ? 'text-white' : 'text-rose-400/80';
-              statusPrompt = 'TODAY (Open)';
-              statusDotStyle = 'bg-rose-500 animate-ping';
-            } else if (day.type === 'future') {
-              cardBgStyle = isSelected
-                ? 'bg-emerald-500 text-zinc-950 shadow-md'
-                : 'bg-zinc-950 hover:bg-zinc-900 text-zinc-550 text-zinc-500';
-              borderStyle = isSelected ? 'border-zinc-200' : 'border-zinc-850';
-              plTextStyle = isSelected ? 'text-zinc-950' : 'text-zinc-500';
-              statusPrompt = 'Future Setup';
-              statusDotStyle = 'bg-zinc-700';
+                ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-xl shadow-rose-950/40'
+                : 'bg-rose-950/20 hover:bg-rose-950/30 text-rose-200';
+              borderStyle = isSelected ? 'border-white ring-2 ring-rose-400' : 'border-rose-900/60 hover:border-rose-850';
+              plTextStyle = isSelected ? 'text-white font-black text-lg' : 'text-rose-400 font-extrabold text-base';
+              statusPrompt = 'No Trades Logged Yet';
+              statusBadgeText = 'TODAY';
+              statusBadgeClass = 'bg-rose-500 text-white animate-pulse';
+              iconComponent = <Ban size={13} className="text-rose-400 animate-spin" style={{ animationDuration: '3s' }} />;
             } else {
+              // Future/Next 7 days without trades are styled as GREEN (upcoming setups allowed)
               cardBgStyle = isSelected
-                ? 'bg-zinc-750 text-white'
-                : 'bg-zinc-950 hover:bg-zinc-900 text-zinc-500';
-              borderStyle = isSelected ? 'border-zinc-300' : 'border-zinc-850';
-              plTextStyle = 'text-zinc-600';
-              statusPrompt = 'No Execution';
-              statusDotStyle = 'bg-zinc-800';
+                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-zinc-950 shadow-lg shadow-emerald-500/20'
+                : 'bg-emerald-950/10 hover:bg-emerald-950/20 text-emerald-200/80';
+              borderStyle = isSelected ? 'border-white ring-2 ring-emerald-400' : 'border-emerald-950/60 hover:border-emerald-900/60';
+              plTextStyle = isSelected ? 'text-zinc-950 font-black text-lg' : 'text-emerald-500/80 font-bold text-sm';
+              statusPrompt = 'Future Setup Open';
+              statusBadgeText = 'UPCOMING';
+              statusBadgeClass = 'bg-emerald-950/80 text-emerald-400 border border-emerald-900/50';
+              iconComponent = <Sparkles size={13} className="text-emerald-550 text-emerald-500" />;
             }
           }
 
@@ -165,51 +174,57 @@ export default function DateStrip({ selectedDateFilter, onSelectDateFilter, trad
               key={day.dateString}
               id={`date-strip-box-${day.dateString}`}
               onClick={() => onSelectDateFilter(isSelected ? null : day.dateString)}
-              className={`flex flex-col justify-between p-4 rounded-xl border text-left transition-all duration-300 cursor-pointer min-h-[110px] ${cardBgStyle} ${borderStyle} ${
-                isSelected ? 'ring-2 ring-zinc-305 ring-white scale-102 shadow-2xl relative z-10' : 'hover:scale-[1.01]'
+              className={`flex flex-col justify-between p-4.5 rounded-2xl border text-left transition-all duration-300 cursor-pointer min-h-[145px] hover:min-h-[145px] relative overflow-hidden ${cardBgStyle} ${borderStyle} ${
+                isSelected ? 'scale-[1.03] shadow-xl z-20' : 'hover:scale-[1.01]'
               }`}
             >
-              {/* Top part: Month and Day info */}
-              <div className="flex justify-between items-start w-full">
+              {/* Box Header (Month, Day name, and Status Badge) */}
+              <div className="flex justify-between items-start w-full relative z-10">
                 <div className="flex flex-col">
-                  <span className={`text-[9px] uppercase font-bold tracking-wider opacity-60 ${isSelected ? 'text-zinc-950' : ''}`}>
+                  <span className={`text-[9px] uppercase font-bold tracking-wider opacity-70 ${isSelected ? 'text-zinc-950' : 'text-zinc-400'}`}>
                     {day.monthName}
                   </span>
-                  <span className={`text-xs font-black font-display uppercase tracking-tight ${isSelected ? 'text-zinc-950' : 'text-zinc-300'}`}>
+                  <span className={`text-sm font-black font-display uppercase tracking-tight ${isSelected ? 'text-zinc-950' : 'text-zinc-200'}`}>
                     {day.dayName}
                   </span>
                 </div>
-                
-                {/* Visual state bullet */}
-                <span className={`w-2 h-2 rounded-full ${statusDotStyle}`} />
+
+                {/* Badge outlining status */}
+                <span className={`text-[8px] font-black tracking-widest px-2 py-0.5 rounded-full uppercase leading-none ${statusBadgeClass}`}>
+                  {statusBadgeText}
+                </span>
               </div>
 
-              {/* Middle: Big Date Number */}
-              <div className="my-1 flex items-baseline gap-1.5">
-                <span className={`text-2xl font-black font-display tracking-tight leading-none ${isSelected ? 'text-zinc-950' : 'text-white'}`}>
+              {/* Box Body: Big Day Number */}
+              <div className="my-2.5 flex items-baseline gap-2 relative z-10">
+                <span className={`text-4xl font-extrabold font-display tracking-tighter leading-none ${isSelected ? 'text-zinc-950' : 'text-white'}`}>
                   {day.dateDay}
                 </span>
-
-                {/* Micro trade counter */}
-                {tradeCount > 0 && (
-                  <span className={`text-[9px] px-1.5 py-0.2 rounded font-extrabold ${
-                    isSelected ? 'bg-zinc-950 text-white' : 'bg-zinc-800 text-zinc-300 border border-zinc-700/80'
-                  }`}>
-                    {tradeCount}T
-                  </span>
-                )}
+                
+                {/* Micro counter/icon */}
+                <div className="flex items-center">
+                  {iconComponent}
+                </div>
               </div>
 
-              {/* Bottom: Net P/L Amount & Emotion Guidance Prompt */}
-              <div className="w-full mt-1.5 pt-1.5 border-t border-zinc-800/20">
-                <span className={`text-xs font-mono block ${plTextStyle}`}>
-                  {hasTrades ? formatAmount(totalPL) : '$0.00'}
-                </span>
-                <span className={`text-[8px] font-semibold uppercase tracking-wider block mt-0.5 truncate max-w-full ${
-                  isSelected ? 'text-zinc-950 opacity-80' : 'text-zinc-500'
+              {/* Box Footer: Profit & Loss and Emotional prompt alignment */}
+              <div className="w-full mt-1.5 pt-2 border-t border-zinc-800/20 relative z-10 flex flex-col gap-0.5">
+                <div className="flex items-center justify-between">
+                  <span className={`font-mono tracking-tight leading-none ${plTextStyle}`}>
+                    {hasTrades ? formatAmount(totalPL) : '$0.00'}
+                  </span>
+                </div>
+                
+                <span className={`text-[9px] font-bold uppercase tracking-wider block truncate max-w-full ${
+                  isSelected ? 'text-zinc-950 opacity-90' : 'text-zinc-400'
                 }`}>
                   {statusPrompt}
                 </span>
+              </div>
+              
+              {/* Subtle design grid pattern inside individual box */}
+              <div className="absolute right-1 bottom-1 opacity-5 pointer-events-none text-zinc-400 select-none text-[50px] font-black font-display leading-none">
+                {day.dateDay}
               </div>
             </button>
           );

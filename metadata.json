@@ -1,6 +1,6 @@
 {
-  "name": "Trading Journal",
-  "description": "A high-performance TradeZella-style trading journal with dashboard analytics and psychological emotional tracking.",
+  "name": "trading-journal",
+  "description": "Trading journal dashboard with psychological emotion tracking.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
