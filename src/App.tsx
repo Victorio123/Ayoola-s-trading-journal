@@ -309,8 +309,10 @@ export default function App() {
 
   const handleSignOut = () => {
     localStorage.removeItem('tradezella_journal_user');
+    localStorage.removeItem('journaly_starting_balance');
     setUser(null);
     setTrades([]);
+    setStartingBalance(100); // Default local fallback
     setSelectedDateFilter(null);
     triggerNotification("Signed out of secure session.");
   };
@@ -330,15 +332,34 @@ export default function App() {
         <GoogleLogin 
           onSuccess={(loggedUser) => {
             localStorage.setItem('tradezella_journal_user', JSON.stringify(loggedUser));
-            if (loggedUser.startingBalance !== undefined) {
-              setStartingBalance(loggedUser.startingBalance);
-              localStorage.setItem('journaly_starting_balance', String(loggedUser.startingBalance));
-              saveUserStartingBalance(loggedUser.email, loggedUser.startingBalance).catch(err => {
-                console.error('Error saving starting balance to Firestore:', err);
-              });
-            }
-            setUser(loggedUser);
-            triggerNotification(`Welcome, ${loggedUser.name}! Secure session established.`);
+            
+            // Check if user already has a starting balance stored in Firestore
+            getUserStartingBalance(loggedUser.email).then((existingBal) => {
+              if (existingBal !== null) {
+                // Keep the existing cloud stored starting balance!
+                setStartingBalance(existingBal);
+                localStorage.setItem('journaly_starting_balance', String(existingBal));
+              } else {
+                // First-time setup: save and use login starting balance (defaulting to 100 if none)
+                const initialBal = (loggedUser.startingBalance !== undefined && loggedUser.startingBalance !== null)
+                  ? loggedUser.startingBalance 
+                  : 100;
+                setStartingBalance(initialBal);
+                localStorage.setItem('journaly_starting_balance', String(initialBal));
+                saveUserStartingBalance(loggedUser.email, initialBal).catch(err => {
+                  console.error('Error saving initial starting balance to Firestore:', err);
+                });
+              }
+              setUser(loggedUser);
+              triggerNotification(`Welcome, ${loggedUser.name}! Secure session established.`);
+            }).catch(err => {
+              console.error('Error querying cloud starting balance:', err);
+              const fallbackBal = loggedUser.startingBalance !== undefined ? loggedUser.startingBalance : 100;
+              setStartingBalance(fallbackBal);
+              localStorage.setItem('journaly_starting_balance', String(fallbackBal));
+              setUser(loggedUser);
+              triggerNotification(`Welcome, ${loggedUser.name}! Secure session established.`);
+            });
           }}
         />
       </>

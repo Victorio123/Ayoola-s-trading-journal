@@ -288,9 +288,9 @@ export default function TradesTable({ trades, onDeleteTrade, onEditTrade }: Trad
 
                       {/* Emotion Edit */}
                       <td className="p-3">
-                        <input
-                          type="text"
-                          className="bg-zinc-950 border border-zinc-700 rounded px-2 py-1 text-xs text-white w-full max-w-[120px]"
+                        <textarea
+                          rows={2}
+                          className="bg-zinc-950 border border-zinc-700 rounded px-2 py-1 text-[11px] text-white w-full min-w-[180px] max-w-[240px] resize-y"
                           value={editEmotion}
                           onChange={(e) => setEditEmotion(e.target.value)}
                         />
@@ -400,9 +400,27 @@ export default function TradesTable({ trades, onDeleteTrade, onEditTrade }: Trad
 
                     {/* Mindset Pill */}
                     <td className="p-4">
-                      <span className={`inline-block max-w-[180px] break-words rounded-lg px-2.5 py-1 border font-semibold text-[11px] leading-snug ${getEmotionPillClass(trade.emotion)}`}>
-                        {trade.emotion}
-                      </span>
+                      {trade.emotion.length <= 45 ? (
+                        <span className={`inline-block max-w-[180px] break-words rounded-lg px-2.5 py-1 border font-semibold text-[11px] leading-snug ${getEmotionPillClass(trade.emotion)}`}>
+                          {trade.emotion}
+                        </span>
+                      ) : (
+                        <div className="flex flex-col gap-1 items-start max-w-[200px]">
+                          <span className={`inline-block break-words rounded-lg px-2.5 py-1 border font-semibold text-[11px] leading-snug ${getEmotionPillClass(trade.emotion)}`}>
+                            {expandedNotes[`m-${trade.id}`] ? trade.emotion : `${trade.emotion.slice(0, 45)}...`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedNotes(prev => ({ ...prev, [`m-${trade.id}`]: !prev[`m-${trade.id}`] }));
+                            }}
+                            className="text-[10px] text-emerald-400 hover:text-emerald-350 cursor-pointer font-bold focus:outline-none"
+                          >
+                            {expandedNotes[`m-${trade.id}`] ? 'show less' : 'Read full mindset'}
+                          </button>
+                        </div>
+                      )}
                     </td>
 
                     {/* Action buttons */}

@@ -264,10 +264,10 @@ export default function TradeForm({ onAddTrade }: TradeFormProps) {
             {/* Custom Mindset Input */}
             {selectedEmotion === 'custom' && (
               <textarea
-                rows={2}
-                maxLength={500}
+                rows={3}
+                maxLength={3000}
                 className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-700 focus:outline-none rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-650 mt-1 resize-y"
-                placeholder="Describe your mental performance or feeling in detail..."
+                placeholder="Describe your mental performance, emotional state, or customized rules in extensive detail (unlimited thoughts allowed)..."
                 value={customEmotion}
                 onChange={(e) => setCustomEmotion(e.target.value)}
               />

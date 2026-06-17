@@ -17,7 +17,7 @@ export default function GoogleLogin({ onSuccess }: GoogleLoginProps) {
   const [formName, setFormName] = useState<string>('');
   const [formPassword, setFormPassword] = useState<string>('');
   const [formError, setFormError] = useState<string>('');
-  const [loginStartingBalance, setLoginStartingBalance] = useState<string>('0');
+  const [loginStartingBalance, setLoginStartingBalance] = useState<string>('100');
 
   // Generate simulated user initials
   const getInitials = (email: string) => {
@@ -200,6 +200,21 @@ export default function GoogleLogin({ onSuccess }: GoogleLoginProps) {
                 </div>
               </div>
 
+              {/* Dynamic Starting Capital Balance Field */}
+              <div className="space-y-1 text-left">
+                <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 block px-1">Starting Capital Balance ($)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="100.00"
+                  className="w-full bg-zinc-950/60 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  value={loginStartingBalance}
+                  onChange={(e) => setLoginStartingBalance(e.target.value)}
+                />
+                <p className="text-[9px] text-zinc-500 px-1 leading-tight">This will initialize your starting capital. Preserved across logins.</p>
+              </div>
+
               {/* Submit CTA */}
               <button
                 type="submit"
@@ -281,6 +296,21 @@ export default function GoogleLogin({ onSuccess }: GoogleLoginProps) {
                     <Chrome size={14} />
                   </div>
                 </div>
+              </div>
+
+              {/* Dynamic Starting Capital Balance Field */}
+              <div className="space-y-1 text-left">
+                <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 block px-1">Starting Capital Balance ($)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="100.00"
+                  className="w-full bg-zinc-950/60 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 animate-fade-in"
+                  value={loginStartingBalance}
+                  onChange={(e) => setLoginStartingBalance(e.target.value)}
+                />
+                <p className="text-[9px] text-zinc-500 px-1 leading-tight">This will initialize your starting capital. Preserved across logins.</p>
               </div>
 
               <div className="flex gap-2 pt-2">
