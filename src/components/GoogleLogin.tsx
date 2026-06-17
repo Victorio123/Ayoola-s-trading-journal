@@ -17,7 +17,7 @@ export default function GoogleLogin({ onSuccess }: GoogleLoginProps) {
   const [formName, setFormName] = useState<string>('');
   const [formPassword, setFormPassword] = useState<string>('');
   const [formError, setFormError] = useState<string>('');
-  const [loginStartingBalance, setLoginStartingBalance] = useState<string>('10000');
+  const [loginStartingBalance, setLoginStartingBalance] = useState<string>('0');
 
   // Generate simulated user initials
   const getInitials = (email: string) => {
@@ -32,7 +32,8 @@ export default function GoogleLogin({ onSuccess }: GoogleLoginProps) {
   const handleCustomEmailSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!customEmail || !customEmail.includes('@')) return;
-    const balanceVal = parseFloat(loginStartingBalance) || 10000;
+    const parsed = parseFloat(loginStartingBalance);
+    const balanceVal = isNaN(parsed) ? 0 : parsed;
     setSelectedEmail(customEmail);
     setStep('loading');
     animateLoading(customEmail, undefined, balanceVal);
@@ -48,7 +49,8 @@ export default function GoogleLogin({ onSuccess }: GoogleLoginProps) {
       setFormError('Please enter your display name.');
       return;
     }
-    const balanceVal = parseFloat(loginStartingBalance) || 10000;
+    const parsed = parseFloat(loginStartingBalance);
+    const balanceVal = isNaN(parsed) ? 0 : parsed;
     setFormError('');
     setSelectedEmail(formEmail);
     setStep('loading');
@@ -227,7 +229,8 @@ export default function GoogleLogin({ onSuccess }: GoogleLoginProps) {
             {/* Alternate bypass option */}
             <button
               onClick={() => {
-                const balanceVal = parseFloat(loginStartingBalance) || 10000;
+                const parsed = parseFloat(loginStartingBalance);
+                const balanceVal = isNaN(parsed) ? 0 : parsed;
                 setSelectedEmail('guest@journaly.local');
                 setStep('loading');
                 animateLoading('guest@journaly.local', 'Guest Trader', balanceVal);

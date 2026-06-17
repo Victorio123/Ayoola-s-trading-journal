@@ -44,7 +44,7 @@ export default function App() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [startingBalance, setStartingBalance] = useState<number>(() => {
     const saved = localStorage.getItem('journaly_starting_balance');
-    return saved ? Number(saved) : 10000;
+    return saved ? Number(saved) : 0;
   });
   const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);

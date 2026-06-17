@@ -25,9 +25,24 @@
 }
 
 @layer base {
+  html, body {
+    max-width: 100vw;
+    width: 100%;
+    overflow-x: hidden;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     background-color: #030712; /* gray-950 */
     color: #f3f4f6; /* gray-100 */
     font-family: var(--font-sans);
+  }
+
+  /* Prevent automatic Safari/Chrome zooming when clicking input elements on devices like phones/iPads */
+  @media (max-width: 1024px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
   }
 }

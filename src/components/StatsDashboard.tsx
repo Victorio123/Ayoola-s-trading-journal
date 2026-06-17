@@ -88,7 +88,7 @@ export default function StatsDashboard({
                 onKeyDown={handleKeyDown}
                 className="w-full bg-zinc-950 border border-emerald-500/80 rounded-lg py-1 px-1.5 text-xs text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 autoFocus
-                placeholder="10000"
+                placeholder="0"
               />
               <button 
                 onClick={(e) => {
