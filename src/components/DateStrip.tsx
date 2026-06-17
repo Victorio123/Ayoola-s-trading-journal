@@ -13,9 +13,9 @@ export default function DateStrip({ selectedDateFilter, onSelectDateFilter, trad
   const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  // Generate 8 days starting from TODAY (offset 0) to next 7 days (offsets +1 to +7)
-  const daysData = Array.from({ length: 8 }, (_, i) => {
-    const offset = i; // offset starts at 0 (Today) and ends at +7
+  // Generate 9 days starting from 8 days ago (offset -8) up to today (offset 0)
+  const daysData = Array.from({ length: 9 }, (_, i) => {
+    const offset = i - 8; // offset starts at -8 (8 days ago) and ends at 0 (today)
     const d = new Date(todayObj);
     d.setDate(todayObj.getDate() + offset);
     
@@ -73,7 +73,7 @@ export default function DateStrip({ selectedDateFilter, onSelectDateFilter, trad
       </div>
 
       {/* Grid containing jumbo size date boxes */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 relative z-10" id="large-date-boxes">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3 relative z-10" id="large-date-boxes">
         {daysData.map((day) => {
           const isSelected = selectedDateFilter === day.dateString;
           
