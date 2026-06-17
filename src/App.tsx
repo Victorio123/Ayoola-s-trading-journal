@@ -42,10 +42,6 @@ export default function App() {
   });
 
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [startingBalance, setStartingBalance] = useState<number>(() => {
-    const saved = localStorage.getItem('journaly_starting_balance');
-    return saved ? Number(saved) : 0;
-  });
   const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [utcTime, setUtcTime] = useState('');
@@ -60,26 +56,6 @@ export default function App() {
     }
     
     setIsLoaded(false);
-
-    // Fetch starting balance for user first
-    getUserStartingBalance(user.email).then((bal) => {
-      if (bal !== null) {
-        setStartingBalance(bal);
-        localStorage.setItem('journaly_starting_balance', String(bal));
-      } else {
-        // No balance stored on Firestore yet.
-        // Keep current startingBalance (e.g. inputted in login or default local state) and store it.
-        setStartingBalance(prev => {
-          saveUserStartingBalance(user.email, prev).catch(err => {
-            console.error('Failed to auto-create balance profile:', err);
-          });
-          localStorage.setItem('journaly_starting_balance', String(prev));
-          return prev;
-        });
-      }
-    }).catch(err => {
-      console.error('Failed fetching starting balance:', err);
-    });
     
     // Attempt loading from secure Cloud Firestore
     getTradesForUser(user.email).then((fetchedTrades) => {
@@ -121,17 +97,6 @@ export default function App() {
       setIsLoaded(true);
     });
   }, [user]);
-
-  const handleUpdateStartingBalance = (newBalance: number) => {
-    setStartingBalance(newBalance);
-    localStorage.setItem('journaly_starting_balance', String(newBalance));
-    if (user) {
-      saveUserStartingBalance(user.email, newBalance).catch(err => {
-        console.error('Error saving starting balance to Firestore:', err);
-      });
-      triggerNotification(`Starting Balance configured to $${newBalance.toLocaleString()}`);
-    }
-  };
 
   // Sync Live UTC Clock (crucial for retail & institutional session tracking)
   useEffect(() => {
@@ -312,7 +277,6 @@ export default function App() {
     localStorage.removeItem('journaly_starting_balance');
     setUser(null);
     setTrades([]);
-    setStartingBalance(100); // Default local fallback
     setSelectedDateFilter(null);
     triggerNotification("Signed out of secure session.");
   };
@@ -332,34 +296,8 @@ export default function App() {
         <GoogleLogin 
           onSuccess={(loggedUser) => {
             localStorage.setItem('tradezella_journal_user', JSON.stringify(loggedUser));
-            
-            // Check if user already has a starting balance stored in Firestore
-            getUserStartingBalance(loggedUser.email).then((existingBal) => {
-              if (existingBal !== null) {
-                // Keep the existing cloud stored starting balance!
-                setStartingBalance(existingBal);
-                localStorage.setItem('journaly_starting_balance', String(existingBal));
-              } else {
-                // First-time setup: save and use login starting balance (defaulting to 100 if none)
-                const initialBal = (loggedUser.startingBalance !== undefined && loggedUser.startingBalance !== null)
-                  ? loggedUser.startingBalance 
-                  : 100;
-                setStartingBalance(initialBal);
-                localStorage.setItem('journaly_starting_balance', String(initialBal));
-                saveUserStartingBalance(loggedUser.email, initialBal).catch(err => {
-                  console.error('Error saving initial starting balance to Firestore:', err);
-                });
-              }
-              setUser(loggedUser);
-              triggerNotification(`Welcome, ${loggedUser.name}! Secure session established.`);
-            }).catch(err => {
-              console.error('Error querying cloud starting balance:', err);
-              const fallbackBal = loggedUser.startingBalance !== undefined ? loggedUser.startingBalance : 100;
-              setStartingBalance(fallbackBal);
-              localStorage.setItem('journaly_starting_balance', String(fallbackBal));
-              setUser(loggedUser);
-              triggerNotification(`Welcome, ${loggedUser.name}! Secure session established.`);
-            });
+            setUser(loggedUser);
+            triggerNotification(`Welcome, ${loggedUser.name}! Secure session established.`);
           }}
         />
       </>
@@ -496,8 +434,6 @@ export default function App() {
         <section aria-label="Analytical Overview" id="section-metrics-hud">
           <StatsDashboard 
             stats={currentStats} 
-            startingBalance={startingBalance}
-            onUpdateStartingBalance={handleUpdateStartingBalance}
           />
         </section>
 
