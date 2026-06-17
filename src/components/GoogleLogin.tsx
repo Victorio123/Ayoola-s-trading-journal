@@ -2,15 +2,13 @@ import { useState, FormEvent } from 'react';
 import { Sparkles, ShieldCheck, Activity, Chrome, LogIn, Mail, User, Lock } from 'lucide-react';
 
 interface GoogleLoginProps {
-  onSuccess: (user: { email: string; name: string; avatar: string }) => void;
-  defaultEmail?: string;
+  onSuccess: (user: { email: string; name: string; avatar: string; startingBalance?: number }) => void;
 }
 
-export default function GoogleLogin({ onSuccess, defaultEmail = 'toolaoilqbi@gmail.com' }: GoogleLoginProps) {
+export default function GoogleLogin({ onSuccess }: GoogleLoginProps) {
   const [step, setStep] = useState<'intro' | 'chooser' | 'loading'>('intro');
   const [selectedEmail, setSelectedEmail] = useState<string>('');
   const [customEmail, setCustomEmail] = useState<string>('');
-  const [showCustomInput, setShowCustomInput] = useState(false);
   const [authProgress, setAuthProgress] = useState<string>('');
 
   // Form states for manual SignUp / Login
@@ -19,6 +17,7 @@ export default function GoogleLogin({ onSuccess, defaultEmail = 'toolaoilqbi@gma
   const [formName, setFormName] = useState<string>('');
   const [formPassword, setFormPassword] = useState<string>('');
   const [formError, setFormError] = useState<string>('');
+  const [loginStartingBalance, setLoginStartingBalance] = useState<string>('10000');
 
   // Generate simulated user initials
   const getInitials = (email: string) => {
@@ -30,18 +29,13 @@ export default function GoogleLogin({ onSuccess, defaultEmail = 'toolaoilqbi@gma
     setStep('chooser');
   };
 
-  const handleSelectAccount = (email: string) => {
-    setSelectedEmail(email);
-    setStep('loading');
-    animateLoading(email);
-  };
-
   const handleCustomEmailSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!customEmail || !customEmail.includes('@')) return;
+    const balanceVal = parseFloat(loginStartingBalance) || 10000;
     setSelectedEmail(customEmail);
     setStep('loading');
-    animateLoading(customEmail);
+    animateLoading(customEmail, undefined, balanceVal);
   };
 
   const handleManualFormSubmit = (e: FormEvent) => {
@@ -54,13 +48,14 @@ export default function GoogleLogin({ onSuccess, defaultEmail = 'toolaoilqbi@gma
       setFormError('Please enter your display name.');
       return;
     }
+    const balanceVal = parseFloat(loginStartingBalance) || 10000;
     setFormError('');
     setSelectedEmail(formEmail);
     setStep('loading');
-    animateLoading(formEmail, formName.trim() || undefined);
+    animateLoading(formEmail, formName.trim() || undefined, balanceVal);
   };
 
-  const animateLoading = (email: string, customName?: string) => {
+  const animateLoading = (email: string, customName?: string, balanceValue?: number) => {
     const statuses = [
       'Establishing secure token handshake...',
       'Validating client credentials...',
@@ -84,7 +79,8 @@ export default function GoogleLogin({ onSuccess, defaultEmail = 'toolaoilqbi@gma
         onSuccess({
           email: email,
           name: formattedName,
-          avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${namePart}&backgroundColor=10b981&textColor=09090b`
+          avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${namePart}&backgroundColor=10b981&textColor=09090b`,
+          startingBalance: balanceValue
         });
       }
     }, 800);
@@ -230,7 +226,12 @@ export default function GoogleLogin({ onSuccess, defaultEmail = 'toolaoilqbi@gma
 
             {/* Alternate bypass option */}
             <button
-              onClick={() => handleSelectAccount('guest@journaly.local')}
+              onClick={() => {
+                const balanceVal = parseFloat(loginStartingBalance) || 10000;
+                setSelectedEmail('guest@journaly.local');
+                setStep('loading');
+                animateLoading('guest@journaly.local', 'Guest Trader', balanceVal);
+              }}
               className="mt-3 text-[11px] font-semibold text-zinc-550 text-zinc-500 hover:text-zinc-300 transition-colors py-1 px-4 cursor-pointer"
             >
               Continue as Local Guest (No account sync)
@@ -258,92 +259,37 @@ export default function GoogleLogin({ onSuccess, defaultEmail = 'toolaoilqbi@gma
             </div>
 
             <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
-              Select an account to proceed to Journaly. This initializes a private client-side partition matching your email ID.
+              Enter your Google account email to proceed to Journaly. This initializes your secure, private cloud partition automatically.
             </p>
 
-            <div className="space-y-3 mb-6" id="google-account-list">
-              {/* Option A: Prefilled personalized */}
-              <button
-                onClick={() => handleSelectAccount(defaultEmail)}
-                className="w-full flex items-center justify-between p-3.5 bg-zinc-850/40 hover:bg-zinc-800/60 border border-zinc-800 hover:border-zinc-700 rounded-2xl text-left transition-all duration-200 cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold font-display text-sm tracking-tighter">
-                    {getInitials(defaultEmail)}
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-zinc-100 block">
-                      {defaultEmail.split('@')[0]}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 block mt-0.5">
-                      {defaultEmail}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider bg-emerald-950/40 border border-emerald-900/30 px-2 py-0.5 rounded-full">
-                  Active
-                </div>
-              </button>
-
-              {/* Option B: Standard Guest mockup */}
-              <button
-                onClick={() => handleSelectAccount('alpha.trader@gmail.com')}
-                className="w-full flex items-center justify-between p-3.5 bg-zinc-950/20 hover:bg-zinc-800/40 border border-zinc-900 hover:border-zinc-850 rounded-2xl text-left transition-all duration-200 cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-755/30 text-zinc-350 flex items-center justify-center font-bold font-display text-sm">
-                    AT
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-zinc-100 block">Alpha Trader</span>
-                    <span className="text-[10px] text-zinc-400 block mt-0.5">alpha.trader@gmail.com</span>
-                  </div>
-                </div>
-              </button>
-            </div>
-
-            {/* Custom email accordion */}
-            {!showCustomInput ? (
-              <button
-                onClick={() => setShowCustomInput(true)}
-                className="text-xs font-bold text-emerald-450 hover:text-emerald-400 transition-colors text-center py-2 flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Mail size={12} />
-                <span>Sign in with another Google Account</span>
-              </button>
-            ) : (
-              <form onSubmit={handleCustomEmailSubmit} className="space-y-3 animate-fade-in mt-2">
+            <form onSubmit={handleCustomEmailSubmit} className="space-y-4 animate-fade-in">
+              <div className="space-y-1 text-left">
+                <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 block px-1">Google Email Address</label>
                 <div className="relative">
                   <input
                     type="email"
                     required
-                    placeholder="Enter Google Account Email..."
+                    placeholder="name@gmail.com"
                     className="w-full bg-zinc-950/60 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 pr-10"
                     value={customEmail}
                     onChange={(e) => setCustomEmail(e.target.value)}
                   />
-                  <div className="absolute right-3 top-3 text-zinc-500">
+                  <div className="absolute right-3 top-3.5 text-zinc-500">
                     <Chrome size={14} />
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-emerald-550 hover:bg-emerald-500 bg-emerald-500 text-zinc-950 font-bold text-xs h-10 rounded-lg flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-[0.98]"
-                  >
-                    <LogIn size={13} />
-                    <span>Authorize</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomInput(false)}
-                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-xs h-10 px-4 rounded-lg cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs h-10 rounded-lg flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-[0.98]"
+                >
+                  <LogIn size={13} />
+                  <span>Sign In</span>
+                </button>
+              </div>
+            </form>
 
             <button
               onClick={() => setStep('intro')}

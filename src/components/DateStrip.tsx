@@ -8,10 +8,10 @@ interface DateStripProps {
 }
 
 export default function DateStrip({ selectedDateFilter, onSelectDateFilter, trades }: DateStripProps) {
-  // Current local time anchor: June 16, 2026.
-  const todayObj = new Date(2026, 5, 16); // June is index 5
+  // Current local time anchor
+  const todayObj = new Date();
   const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const monthLabels = ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'];
+  const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   // Generate 8 days starting from TODAY (offset 0) to next 7 days (offsets +1 to +7)
   const daysData = Array.from({ length: 8 }, (_, i) => {
@@ -27,7 +27,7 @@ export default function DateStrip({ selectedDateFilter, onSelectDateFilter, trad
     const dayName = dayLabels[d.getDay()];
     const dateDay = d.getDate();
     // Month is indexed relative to the actual generated month
-    const monthName = monthLabels[d.getMonth() === 5 ? 0 : d.getMonth() - 5] || 'Jun';
+    const monthName = monthLabels[d.getMonth()] || 'Jun';
     
     return {
       dateString,

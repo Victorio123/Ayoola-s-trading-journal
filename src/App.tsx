@@ -7,7 +7,6 @@ import {
   Clock, 
   CheckCircle,
   HelpCircle,
-  FolderSync,
   Sparkles,
   TrendingUp,
   TrendingDown,
@@ -22,19 +21,15 @@ import TradeForm from './components/TradeForm';
 import PsychologyInsights from './components/PsychologyInsights';
 import TradesTable from './components/TradesTable';
 import GoogleLogin from './components/GoogleLogin';
-
-// Premium high-fidelity seed data
-const DEMO_TRADES: Omit<Trade, 'id'>[] = [
-  { pair: 'NAS100', type: 'BUY', risk: 250, pl: 620, emotion: 'Disciplined', date: '2026-06-16', notes: 'High volume morning breakout of Asia Session High. Perfect execution and patience.' },
-  { pair: 'NAS100', type: 'BUY', risk: 200, pl: 750, emotion: 'Disciplined', date: '2026-06-15', notes: 'Clean breakout of overnight consolidation. Took partials.' },
-  { pair: 'XAUUSD', type: 'SELL', risk: 150, pl: -150, emotion: 'Calm', date: '2026-06-14', notes: 'Standard breakdown test, stopped out on aggressive pullback.' },
-  { pair: 'EURUSD', type: 'BUY', risk: 100, pl: 350, emotion: 'Confident', date: '2026-06-12', notes: 'Daily trend alignment. Highly technical entry.' },
-  { pair: 'BTCUSD', type: 'BUY', risk: 300, pl: -300, emotion: 'FOMO', date: '2026-06-11', notes: 'Felt left out of crypto pump. Chased at local high.' },
-  { pair: 'XAUUSD', type: 'SELL', risk: 250, pl: -250, emotion: 'Revenge', date: '2026-06-09', notes: 'Tried to make back XAUUSD losses too fast. Overleveraged.' },
-  { pair: 'NAS100', type: 'BUY', risk: 150, pl: 450, emotion: 'Disciplined', date: '2026-06-07', notes: 'Stoppings on 15m key support level. Perfect R:R.' },
-  { pair: 'US30', type: 'SELL', risk: 120, pl: -120, emotion: 'Fearful', date: '2026-06-05', notes: 'Got nervous due to high spread and exited manually too early.' },
-  { pair: 'XAUUSD', type: 'BUY', risk: 100, pl: 220, emotion: 'Calm', date: '2026-06-03', notes: 'Simple continuation play on daily support.' }
-];
+import { 
+  getTradesForUser, 
+  saveTradeToFirestore, 
+  deleteTradeFromFirestore, 
+  batchSaveTradesToFirestore, 
+  clearAllUserTrades,
+  getUserStartingBalance,
+  saveUserStartingBalance
+} from './lib/firebase';
 
 export default function App() {
   const [user, setUser] = useState<{ email: string; name: string; avatar: string } | null>(() => {
@@ -47,43 +42,84 @@ export default function App() {
   });
 
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [startingBalance, setStartingBalance] = useState<number>(() => {
+    const saved = localStorage.getItem('journaly_starting_balance');
+    return saved ? Number(saved) : 10000;
+  });
   const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [utcTime, setUtcTime] = useState('');
   const [showNotification, setShowNotification] = useState<string | null>(null);
 
-  // Initialize data from local storage, partitioned by user email
+  // Initialize data from Firestore and Sync locally
   useEffect(() => {
     if (!user) {
+      setTrades([]);
       setIsLoaded(true);
       return;
     }
     
     setIsLoaded(false);
-    const storageKey = `tradezella_journal_trades_${user.email}`;
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      try {
-        const loadedTrades = JSON.parse(saved);
-        setTrades(loadedTrades);
-      } catch (err) {
-        console.error('Failed reading trades from local storage:', err);
-        setTrades([]);
+
+    // Fetch starting balance for user first
+    getUserStartingBalance(user.email).then((bal) => {
+      setStartingBalance(bal);
+      localStorage.setItem('journaly_starting_balance', String(bal));
+    }).catch(err => {
+      console.error('Failed fetching starting balance:', err);
+    });
+    
+    // Attempt loading from secure Cloud Firestore
+    getTradesForUser(user.email).then((fetchedTrades) => {
+      if (fetchedTrades.length > 0) {
+        setTrades(fetchedTrades);
+        setIsLoaded(true);
+      } else {
+        // Fallback to offline localStorage partition if any exist raw
+        const storageKey = `tradezella_journal_trades_${user.email}`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          try {
+            const loadedTrades = JSON.parse(saved);
+            setTrades(loadedTrades);
+            // Proactively auto-migrate existing offline trades to cloud database
+            batchSaveTradesToFirestore(user.email, loadedTrades).catch(err => {
+              console.error('Migration backup error:', err);
+            });
+          } catch (err) {
+            console.error('Local copy read error:', err);
+            setTrades([]);
+          }
+        } else {
+          setTrades([]);
+        }
+        setIsLoaded(true);
       }
-    } else {
-      // Clean slate! Starting balance starts at exactly $0.00!
-      setTrades([]);
-    }
-    setIsLoaded(true);
+    }).catch((err) => {
+      console.error('Cloud load failure, falling back local storage:', err);
+      const storageKey = `tradezella_journal_trades_${user.email}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          setTrades(JSON.parse(saved));
+        } catch {
+          setTrades([]);
+        }
+      }
+      setIsLoaded(true);
+    });
   }, [user]);
 
-  // Save to local storage whenever trades state updates
-  useEffect(() => {
-    if (isLoaded && user) {
-      const storageKey = `tradezella_journal_trades_${user.email}`;
-      localStorage.setItem(storageKey, JSON.stringify(trades));
+  const handleUpdateStartingBalance = (newBalance: number) => {
+    setStartingBalance(newBalance);
+    localStorage.setItem('journaly_starting_balance', String(newBalance));
+    if (user) {
+      saveUserStartingBalance(user.email, newBalance).catch(err => {
+        console.error('Error saving starting balance to Firestore:', err);
+      });
+      triggerNotification(`Starting Balance configured to $${newBalance.toLocaleString()}`);
     }
-  }, [trades, isLoaded, user]);
+  };
 
   // Sync Live UTC Clock (crucial for retail & institutional session tracking)
   useEffect(() => {
@@ -147,12 +183,45 @@ export default function App() {
     };
   };
 
-  const currentStats = calculateStats(trades);
+  const [selectedMonth, setSelectedMonth] = useState<string>('All');
+
+  // Extract unique months from trades list
+  const getTradeMonths = (tradeList: Trade[]) => {
+    const monthsSet = new Set<string>();
+    tradeList.forEach((t) => {
+      if (t.date) {
+        const parts = t.date.split('-');
+        if (parts.length >= 2) {
+          monthsSet.add(`${parts[0]}-${parts[1]}`);
+        }
+      }
+    });
+    return Array.from(monthsSet).sort((a, b) => b.localeCompare(a));
+  };
+
+  const tradeMonths = getTradeMonths(trades);
+
+  const formatMonthName = (yearMonthStr: string) => {
+    if (yearMonthStr === 'All') return 'All Months';
+    const [year, month] = yearMonthStr.split('-');
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return `${monthNames[parseInt(month) - 1]} ${year}`;
+  };
+
+  // 1. Filter trades by selected month
+  const monthlyTrades = selectedMonth !== 'All'
+    ? trades.filter((t) => t.date && t.date.startsWith(selectedMonth))
+    : trades;
+
+  const currentStats = calculateStats(monthlyTrades);
 
   // Filter trades for bottom table if a date is selected from the strip
   const visibleTrades = selectedDateFilter
-    ? trades.filter((t) => t.date === selectedDateFilter)
-    : trades;
+    ? monthlyTrades.filter((t) => t.date === selectedDateFilter)
+    : monthlyTrades;
 
   // Add new trade
   const handleAddTrade = (newTradeData: Omit<Trade, 'id'>) => {
@@ -160,39 +229,70 @@ export default function App() {
       ...newTradeData,
       id: `trade-id-${Date.now()}`
     };
+
+    if (user) {
+      saveTradeToFirestore(user.email, newTrade).catch(err => {
+        console.error('Error saving new trade to cloud:', err);
+      });
+      const storageKey = `tradezella_journal_trades_${user.email}`;
+      localStorage.setItem(storageKey, JSON.stringify([newTrade, ...trades]));
+    }
+
     setTrades((prev) => [newTrade, ...prev]);
-    triggerNotification(`Logged trade ${newTradeData.pair} (+${newTradeData.pl >= 0 ? '$' : '-$'}${Math.abs(newTradeData.pl)}) to local journal!`);
+    triggerNotification(`Logged trade ${newTradeData.pair} (+${newTradeData.pl >= 0 ? '$' : '-$'}${Math.abs(newTradeData.pl)}) to cloud ledger!`);
   };
 
   // Delete trade
   const handleDeleteTrade = (id: string) => {
     const target = trades.find(t => t.id === id);
-    setTrades((prev) => prev.filter((trade) => trade.id !== id));
-    if (target) {
-      triggerNotification(`Removed trade record ${target.pair} from log history.`);
+    if (!target) return;
+
+    deleteTradeFromFirestore(id).catch(err => {
+      console.error('Error deleting trade from cloud:', err);
+    });
+
+    const updated = trades.filter((trade) => trade.id !== id);
+    setTrades(updated);
+
+    if (user) {
+      const storageKey = `tradezella_journal_trades_${user.email}`;
+      localStorage.setItem(storageKey, JSON.stringify(updated));
     }
+
+    triggerNotification(`Removed trade record ${target.pair} from cloud ledger.`);
   };
 
   // Edit trade
   const handleEditTrade = (updatedTrade: Trade) => {
-    setTrades((prev) => prev.map((t) => (t.id === updatedTrade.id ? updatedTrade : t)));
-    triggerNotification(`Updated trade modifications for ${updatedTrade.pair}.`);
-  };
+    if (user) {
+      saveTradeToFirestore(user.email, updatedTrade).catch(err => {
+        console.error('Error updating trade in cloud:', err);
+      });
+    }
 
-  // Reset to seed/demo data
-  const handleLoadDemo = () => {
-    const initialSeed: Trade[] = DEMO_TRADES.map((d, index) => ({
-      ...d,
-      id: `seed-id-${Date.now()}-${index}`
-    }));
-    setTrades(initialSeed);
-    triggerNotification("Reloaded default high-performance demo journal setups.");
+    const updated = trades.map((t) => (t.id === updatedTrade.id ? updatedTrade : t));
+    setTrades(updated);
+
+    if (user) {
+      const storageKey = `tradezella_journal_trades_${user.email}`;
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+    }
+
+    triggerNotification(`Updated trade modifications for ${updatedTrade.pair}.`);
   };
 
   // Clear all data
   const handleClearAll = () => {
+    if (user) {
+      clearAllUserTrades(user.email).catch(err => {
+        console.error('Error clearing trades in cloud:', err);
+      });
+      const storageKey = `tradezella_journal_trades_${user.email}`;
+      localStorage.removeItem(storageKey);
+    }
+
     setTrades([]);
-    triggerNotification("Cleared all trade logs completely. Database is fresh.");
+    triggerNotification("Cleared all trade logs completely. Cloud database is fresh.");
   };
 
   const handleSignOut = () => {
@@ -200,7 +300,7 @@ export default function App() {
     setUser(null);
     setTrades([]);
     setSelectedDateFilter(null);
-    triggerNotification("Signed out of Google session.");
+    triggerNotification("Signed out of secure session.");
   };
 
   if (!user) {
@@ -218,6 +318,13 @@ export default function App() {
         <GoogleLogin 
           onSuccess={(loggedUser) => {
             localStorage.setItem('tradezella_journal_user', JSON.stringify(loggedUser));
+            if (loggedUser.startingBalance !== undefined) {
+              setStartingBalance(loggedUser.startingBalance);
+              localStorage.setItem('journaly_starting_balance', String(loggedUser.startingBalance));
+              saveUserStartingBalance(loggedUser.email, loggedUser.startingBalance).catch(err => {
+                console.error('Error saving starting balance to Firestore:', err);
+              });
+            }
             setUser(loggedUser);
             triggerNotification(`Welcome, ${loggedUser.name}! Secure session established.`);
           }}
@@ -289,16 +396,6 @@ export default function App() {
             {/* Actions */}
             <div className="flex items-center gap-1.5" id="header-utility-actions">
               <button
-                onClick={handleLoadDemo}
-                className="flex items-center gap-1 px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 hover:border-zinc-700 text-zinc-300 rounded-lg transition-all duration-150 tooltip cursor-pointer"
-                title="Reset to default multi-emotion demo dataset"
-                id="btn-load-demo-data"
-              >
-                <FolderSync size={12.5} />
-                <span>Reset Seed</span>
-              </button>
-
-              <button
                 onClick={handleClearAll}
                 className="flex items-center gap-1 px-2.5 py-1.5 bg-zinc-900/40 hover:bg-rose-950/25 border border-zinc-850 hover:border-rose-900/50 text-zinc-400 hover:text-rose-450 rounded-lg transition-all duration-150 tooltip cursor-pointer"
                 title="Wipe local storage and begin empty journal"
@@ -317,11 +414,58 @@ export default function App() {
       {/* Main Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6" id="dashboard-container-body">
         
-
+        {/* MONTH SELECTOR RIBBON */}
+        <div id="monthly-stats-ribbon" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-zinc-900/45 p-3 sm:px-4 rounded-xl border border-zinc-850">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-3 bg-emerald-500 rounded-full" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
+              Filter Portfolio by Month
+            </h3>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => {
+                setSelectedMonth('All');
+                setSelectedDateFilter(null);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer border ${
+                selectedMonth === 'All'
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                  : 'bg-zinc-950/40 text-zinc-400 border-zinc-900 hover:border-zinc-800 hover:text-zinc-200'
+              }`}
+            >
+              All Months ({trades.length})
+            </button>
+            
+            {tradeMonths.map((m) => {
+              const count = trades.filter(t => t.date && t.date.startsWith(m)).length;
+              return (
+                <button
+                  key={m}
+                  onClick={() => {
+                    setSelectedMonth(m);
+                    setSelectedDateFilter(null);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-155 cursor-pointer border ${
+                    selectedMonth === m
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                      : 'bg-zinc-950/40 text-zinc-400 border-zinc-900 hover:border-zinc-800 hover:text-zinc-200'
+                  }`}
+                >
+                  {formatMonthName(m)} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* 1. TOP ANALYTICS DASHBOARD - STYLED CARDS (THE ABSOLUTE HIGHEST PRIORITY REQ) */}
         <section aria-label="Analytical Overview" id="section-metrics-hud">
-          <StatsDashboard stats={currentStats} />
+          <StatsDashboard 
+            stats={currentStats} 
+            startingBalance={startingBalance}
+            onUpdateStartingBalance={handleUpdateStartingBalance}
+          />
         </section>
 
         {/* 2. DATE STRIP TIMELINE SELECTOR (VERY IMPORTANT REQ) */}
@@ -329,7 +473,7 @@ export default function App() {
           <DateStrip 
             selectedDateFilter={selectedDateFilter}
             onSelectDateFilter={setSelectedDateFilter}
-            trades={trades}
+            trades={monthlyTrades}
           />
         </section>
 
