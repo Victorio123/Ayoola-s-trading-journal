@@ -182,7 +182,7 @@ export async function clearAllUserTrades(email: string): Promise<void> {
 }
 
 // Helper: Fetch user's profile starting balance
-export async function getUserStartingBalance(email: string): Promise<number> {
+export async function getUserStartingBalance(email: string): Promise<number | null> {
   const docPath = `profiles/${email.toLowerCase()}`;
   try {
     const docRef = doc(db, 'profiles', email.toLowerCase());
@@ -197,7 +197,7 @@ export async function getUserStartingBalance(email: string): Promise<number> {
     }
     console.error('Error getting starting balance from Firestore:', error);
   }
-  return 0; // default default balance if not found
+  return null; // return null if not found
 }
 
 // Helper: Save user's starting balance

@@ -63,8 +63,20 @@ export default function App() {
 
     // Fetch starting balance for user first
     getUserStartingBalance(user.email).then((bal) => {
-      setStartingBalance(bal);
-      localStorage.setItem('journaly_starting_balance', String(bal));
+      if (bal !== null) {
+        setStartingBalance(bal);
+        localStorage.setItem('journaly_starting_balance', String(bal));
+      } else {
+        // No balance stored on Firestore yet.
+        // Keep current startingBalance (e.g. inputted in login or default local state) and store it.
+        setStartingBalance(prev => {
+          saveUserStartingBalance(user.email, prev).catch(err => {
+            console.error('Failed to auto-create balance profile:', err);
+          });
+          localStorage.setItem('journaly_starting_balance', String(prev));
+          return prev;
+        });
+      }
     }).catch(err => {
       console.error('Failed fetching starting balance:', err);
     });

@@ -34,6 +34,7 @@ export default function TradesTable({ trades, onDeleteTrade, onEditTrade }: Trad
   const [editEmotion, setEditEmotion] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editNotes, setEditNotes] = useState('');
+  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
 
   // Extract unique pairs for quick dropdown filter if needed, or simple text search
   const uniqueEmotions = Array.from(new Set(trades.map((t) => t.emotion || ''))).filter(Boolean);
@@ -164,7 +165,7 @@ export default function TradesTable({ trades, onDeleteTrade, onEditTrade }: Trad
 
           {/* Emotion Filter */}
           <select
-            className="bg-zinc-950 border border-zinc-850 text-xs px-3 py-2 rounded-lg text-zinc-200 focus:outline-none focus:border-zinc-700 font-medium max-w-[130px]"
+            className="bg-zinc-950 border border-zinc-850 text-xs px-3 py-2 rounded-lg text-zinc-200 focus:outline-none focus:border-zinc-700 font-medium max-w-[180px]"
             value={selectedEmotionFilter}
             onChange={(e) => setSelectedEmotionFilter(e.target.value)}
           >
@@ -342,7 +343,29 @@ export default function TradesTable({ trades, onDeleteTrade, onEditTrade }: Trad
                         {trade.notes && (
                           <>
                             <span>•</span>
-                            <span className="text-zinc-450 italic truncate max-w-xs">{trade.notes}</span>
+                            <span className="text-zinc-450 italic inline-flex flex-wrap items-center">
+                              {trade.notes.length <= 55 ? (
+                                <span className="break-all">{trade.notes}</span>
+                              ) : (
+                                <span>
+                                  {expandedNotes[trade.id] ? (
+                                    <span className="break-all whitespace-pre-wrap">{trade.notes}</span>
+                                  ) : (
+                                    <span className="break-all">{trade.notes.slice(0, 55)}...</span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedNotes(prev => ({ ...prev, [trade.id]: !prev[trade.id] }));
+                                    }}
+                                    className="ml-1 text-emerald-400 hover:text-emerald-350 cursor-pointer font-bold focus:outline-none focus:underline underline leading-none"
+                                  >
+                                    {expandedNotes[trade.id] ? 'less' : 'more'}
+                                  </button>
+                                </span>
+                              )}
+                            </span>
                           </>
                         )}
                       </div>
@@ -377,7 +400,7 @@ export default function TradesTable({ trades, onDeleteTrade, onEditTrade }: Trad
 
                     {/* Mindset Pill */}
                     <td className="p-4">
-                      <span className={`text-[11px] px-2.5 py-1 rounded-full border font-semibold ${getEmotionPillClass(trade.emotion)}`}>
+                      <span className={`inline-block max-w-[180px] break-words rounded-lg px-2.5 py-1 border font-semibold text-[11px] leading-snug ${getEmotionPillClass(trade.emotion)}`}>
                         {trade.emotion}
                       </span>
                     </td>
