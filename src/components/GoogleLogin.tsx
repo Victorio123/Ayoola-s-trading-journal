@@ -391,10 +391,7 @@ export default function GoogleLogin({ onSuccess }: GoogleLoginProps) {
               </button>
             </div>
 
-            <div className="mt-8 w-full pt-4 border-t border-zinc-800/40 flex items-center justify-center gap-2 text-[10px] text-zinc-600">
-              <ShieldCheck size={14} className="text-emerald-500/60" />
-              <span>Secure isolated local workspace protocol active.</span>
-            </div>
+
           </div>
         )}
 

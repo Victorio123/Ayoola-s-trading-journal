@@ -84,24 +84,37 @@ Best regards,
 Journaly Team`;
 
     const htmlContent = `
-      <div style="font-family: sans-serif; max-width: 450px; margin: 0 auto; color: #333333; line-height: 1.6; font-size: 14px;">
-        <p style="font-size: 16px; font-weight: bold; color: #10b981; margin-bottom: 20px;">Journaly Security</p>
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 450px; margin: 0 auto; color: #333333; line-height: 1.6; font-size: 14px; border: 1px solid #e4e4e7; border-radius: 12px; padding: 24px; background-color: #ffffff;">
+        <!-- Header with stylized J display picture -->
+        <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
+          <tr>
+            <td style="vertical-align: middle; padding-right: 12px;">
+              <div style="width: 40px; height: 40px; line-height: 40px; border-radius: 20px; background-color: #10b981; text-align: center; color: #ffffff; font-weight: 800; font-size: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                J
+              </div>
+            </td>
+            <td style="vertical-align: middle;">
+              <span style="font-size: 16px; font-weight: 800; color: #18181b; letter-spacing: -0.01em;">Journaly</span>
+              <span style="display: block; font-size: 11px; color: #71717a; font-weight: 500; margin-top: 1px;">Security Team</span>
+            </td>
+          </tr>
+        </table>
         
-        <p>Hello,</p>
+        <p style="margin-top: 0; color: #3f3f46;">Hello,</p>
         
-        <p>
+        <p style="color: #3f3f46;">
           ${isReset 
             ? "We received a request to reset your password. Use the following code to authorize this action:" 
             : "We received a request to access your account. Please use the following code to log in safely:"
           }
         </p>
         
-        <div style="background-color: #f4f4f5; border-radius: 6px; padding: 15px; margin: 20px 0; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #111111;">
+        <div style="background-color: #f4f4f5; border-radius: 8px; padding: 18px; margin: 24px 0; text-align: center; font-size: 26px; font-weight: 800; letter-spacing: 6px; color: #10b981; border: 1px solid #e4e4e7; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
           ${code}
         </div>
         
-        <p style="color: #666666; font-size: 12px; margin-top: 30px; border-top: 1px solid #eeeeee; padding-top: 15px;">
-          This code is temporary and secure. If you did not make this request, you can safely ignore this message. Do not reply directly to this email.
+        <p style="color: #71717a; font-size: 12px; margin-top: 32px; border-top: 1px solid #e4e4e7; padding-top: 16px; line-height: 1.5;">
+          This temporary security code is valid for single use. If you did not make this request, you can safely ignore this message. Do not reply to this automated transmission.
         </p>
       </div>
     `;
