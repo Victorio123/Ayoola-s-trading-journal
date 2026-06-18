@@ -4,8 +4,11 @@ import { Trade, EmotionType } from '../types';
 
 interface TradesTableProps {
   trades: Trade[];
+  allTrades?: Trade[];
   onDeleteTrade: (id: string) => void;
   onEditTrade?: (trade: Trade) => void;
+  selectedDateFilter?: string | null;
+  onClearDateFilter?: () => void;
 }
 
 const EMOTION_COLORS: Record<string, string> = {
@@ -19,7 +22,14 @@ const EMOTION_COLORS: Record<string, string> = {
   Impatient: 'bg-slate-900/60 text-slate-400 border-slate-800/80',
 };
 
-export default function TradesTable({ trades, onDeleteTrade, onEditTrade }: TradesTableProps) {
+export default function TradesTable({ 
+  trades, 
+  allTrades = [], 
+  onDeleteTrade, 
+  onEditTrade,
+  selectedDateFilter,
+  onClearDateFilter
+}: TradesTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmotionFilter, setSelectedEmotionFilter] = useState<string>('ALL');
   const [resultFilter, setResultFilter] = useState<'ALL' | 'WINS' | 'LOSSES'>('ALL');
@@ -135,7 +145,30 @@ export default function TradesTable({ trades, onDeleteTrade, onEditTrade }: Trad
       {/* Search / Filters Bar */}
       <div className="flex flex-col gap-4 mb-5 md:flex-row md:items-center md:justify-between" id="table-controls-panel">
         <div>
-          <h3 className="text-md font-bold font-display text-white">Execution Logs</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-md font-bold font-display text-zinc-100">Execution Logs</h3>
+            {selectedDateFilter && (
+              <div className="flex items-center gap-1.5">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border flex items-center gap-1 ${
+                  trades.length < allTrades.length
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                }`}>
+                  {trades.length < allTrades.length 
+                    ? `Filtered: ${formatDateString(selectedDateFilter)}` 
+                    : `No setups on ${formatDateString(selectedDateFilter)} — Showing all history`}
+                </span>
+                {onClearDateFilter && (
+                  <button
+                    onClick={onClearDateFilter}
+                    className="text-[9px] text-rose-400 hover:text-rose-300 font-bold bg-rose-950/20 hover:bg-rose-955 px-1.5 py-0.5 rounded-md border border-rose-900/30 transition-all cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           <p className="text-xs text-zinc-500 mt-1">Review, filter, and adjust individual trading setups</p>
         </div>
 
@@ -146,7 +179,7 @@ export default function TradesTable({ trades, onDeleteTrade, onEditTrade }: Trad
             <input
               type="text"
               placeholder="Search pair / note / emotion..."
-              className="w-full bg-zinc-950 border border-zinc-850 text-xs px-3 py-2 pl-8 rounded-lg text-white focus:outline-none focus:border-zinc-700 font-medium"
+              className="w-full bg-zinc-950 border border-zinc-850 text-xs px-3 py-2 pl-8 rounded-lg text-zinc-100 focus:outline-none focus:border-zinc-700 font-medium"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -455,14 +488,14 @@ export default function TradesTable({ trades, onDeleteTrade, onEditTrade }: Trad
       {/* Stats counter footer */}
       <div className="mt-4 flex flex-col sm:flex-row justify-between items-center text-[11px] text-zinc-500 px-1 gap-2">
         <div>
-          Showing {filteredTrades.length} of {trades.length} logged setups
+          Showing {filteredTrades.length} of {trades.length} logged setups{allTrades.length > trades.length && ` (Filtered from ${allTrades.length} total)`}
         </div>
         <div className="flex gap-2.5">
           <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Wins: {trades.filter(t => t.pl > 0).length}
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Total Wins: {allTrades.length > 0 ? allTrades.filter(t => t.pl > 0).length : trades.filter(t => t.pl > 0).length}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Losses: {trades.filter(t => t.pl < 0).length}
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Total Losses: {allTrades.length > 0 ? allTrades.filter(t => t.pl < 0).length : trades.filter(t => t.pl < 0).length}
           </span>
         </div>
       </div>

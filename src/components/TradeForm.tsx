@@ -97,7 +97,7 @@ export default function TradeForm({ onAddTrade }: TradeFormProps) {
     <div id="trade-input-form-container" className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-lg">
       <div className="flex items-center gap-2 mb-4">
         <PlusCircle className="text-emerald-500" size={18} />
-        <h3 className="text-md font-bold font-display text-white">Log Trading Session</h3>
+        <h3 className="text-md font-bold font-display text-zinc-100">Log Trading Session</h3>
       </div>
 
       {error && (
@@ -115,7 +115,7 @@ export default function TradeForm({ onAddTrade }: TradeFormProps) {
           </label>
           <input
             type="text"
-            className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-700 focus:outline-none rounded-lg px-3 py-2 text-sm text-white font-mono placeholder:text-zinc-650"
+            className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-700 focus:outline-none rounded-lg px-3 py-2 text-sm text-zinc-100 font-mono placeholder:text-zinc-650"
             placeholder="e.g. NAS100, XAUUSD"
             value={pair}
             onChange={(e) => setPair(e.target.value)}
@@ -182,7 +182,7 @@ export default function TradeForm({ onAddTrade }: TradeFormProps) {
                 type="number"
                 step="any"
                 min="0"
-                className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 focus:outline-none rounded-lg pl-6 pr-3 py-2 text-sm text-white font-mono placeholder:text-zinc-600"
+                className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 focus:outline-none rounded-lg pl-6 pr-3 py-2 text-sm text-zinc-100 font-mono placeholder:text-zinc-600"
                 placeholder="100.00"
                 value={risk}
                 onChange={(e) => setRisk(e.target.value)}
@@ -227,7 +227,7 @@ export default function TradeForm({ onAddTrade }: TradeFormProps) {
                 type="number"
                 step="any"
                 min="0"
-                className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 focus:outline-none rounded-lg pl-7 pr-3 py-2 text-sm text-white font-mono placeholder:text-zinc-600"
+                className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 focus:outline-none rounded-lg pl-7 pr-3 py-2 text-sm text-zinc-100 font-mono placeholder:text-zinc-600"
                 placeholder="250.00"
                 value={plAmount}
                 onChange={(e) => setPlAmount(e.target.value)}
@@ -266,7 +266,7 @@ export default function TradeForm({ onAddTrade }: TradeFormProps) {
               <textarea
                 rows={3}
                 maxLength={3000}
-                className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-700 focus:outline-none rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-650 mt-1 resize-y"
+                className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-700 focus:outline-none rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-650 mt-1 resize-y"
                 placeholder="Describe your mental performance, emotional state, or customized rules in extensive detail (unlimited thoughts allowed)..."
                 value={customEmotion}
                 onChange={(e) => setCustomEmotion(e.target.value)}
@@ -303,7 +303,7 @@ export default function TradeForm({ onAddTrade }: TradeFormProps) {
           <textarea
             rows={3}
             maxLength={1000}
-            className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-700 focus:outline-none rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-650 resize-y"
+            className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-700 focus:outline-none rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-650 resize-y"
             placeholder="Write very long notes... (e.g. Market trend, daily rules followed, lesson of the setup, mistakes to avoid)"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

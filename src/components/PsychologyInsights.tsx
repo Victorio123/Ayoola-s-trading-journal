@@ -88,7 +88,7 @@ export default function PsychologyInsights({ trades }: PsychologyInsightsProps) 
     <div id="psychology-insights-section" className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-lg h-full">
       <div className="flex items-center gap-2 mb-4">
         <BrainCircuit className="text-violet-500" size={18} />
-        <h3 className="text-md font-bold font-display text-white">Mindset Analytics Dashboard</h3>
+        <h3 className="text-md font-bold font-display text-zinc-100">Mindset Analytics Dashboard</h3>
       </div>
 
       {/* Highlights - Best and Worst Emotional States */}
@@ -100,7 +100,7 @@ export default function PsychologyInsights({ trades }: PsychologyInsightsProps) 
           </div>
           <div className="min-w-0">
             <span className="text-[10px] uppercase font-bold text-zinc-500">Peak Performance Mindset</span>
-            <h4 className="text-sm font-semibold text-white mt-0.5 truncate">
+            <h4 className="text-sm font-semibold text-zinc-100 mt-0.5 truncate">
               {bestEmotion ? bestEmotion.emotion : 'None yet'}
             </h4>
             <p className="text-[11px] text-zinc-400 mt-1 font-medium font-mono">
@@ -122,7 +122,7 @@ export default function PsychologyInsights({ trades }: PsychologyInsightsProps) 
           </div>
           <div className="min-w-0">
             <span className="text-[10px] uppercase font-bold text-zinc-500">Heaviest Drawdown Trigger</span>
-            <h4 className="text-sm font-semibold text-white mt-0.5 truncate">
+            <h4 className="text-sm font-semibold text-zinc-100 mt-0.5 truncate">
               {worstEmotion ? worstEmotion.emotion : 'None yet'}
             </h4>
             <p className="text-[11px] text-zinc-400 mt-1 font-medium font-mono">

@@ -189,7 +189,7 @@ export default function DateStrip({ selectedDateFilter, onSelectDateFilter, trad
 
               {/* Box Body: Big Day Number */}
               <div className="my-2.5 flex items-baseline gap-2 relative z-10">
-                <span className={`text-4xl font-extrabold font-display tracking-tighter leading-none ${isSelected ? 'text-zinc-950' : 'text-white'}`}>
+                <span className={`text-4xl font-extrabold font-display tracking-tighter leading-none ${isSelected ? 'text-zinc-950' : 'text-zinc-100'}`}>
                   {day.dateDay}
                 </span>
                 

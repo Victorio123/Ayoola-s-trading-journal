@@ -12,7 +12,9 @@ import {
   TrendingDown,
   Filter,
   LogOut,
-  User
+  User,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { Trade, TradingStats } from './types';
 import StatsDashboard from './components/StatsDashboard';
@@ -21,6 +23,7 @@ import TradeForm from './components/TradeForm';
 import PsychologyInsights from './components/PsychologyInsights';
 import TradesTable from './components/TradesTable';
 import GoogleLogin from './components/GoogleLogin';
+import AdminDiagnostics from './components/AdminDiagnostics';
 import { 
   getTradesForUser, 
   saveTradeToFirestore, 
@@ -28,10 +31,117 @@ import {
   batchSaveTradesToFirestore, 
   clearAllUserTrades,
   getUserStartingBalance,
-  saveUserStartingBalance
+  saveUserStartingBalance,
+  getAdminDiagnostics,
+  AdminDiagnosticsData
 } from './lib/firebase';
 
+const generateDemoTrades = (): Trade[] => {
+  const today = new Date();
+  
+  const formatDate = (daysOffset: number) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + daysOffset);
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    const da = String(d.getDate()).padStart(2, '0');
+    return `${yr}-${mo}-${da}`;
+  };
+
+  return [
+    {
+      id: `demo-trade-1`,
+      pair: 'NAS100',
+      type: 'BUY',
+      risk: 250,
+      pl: 750,
+      emotion: 'Disciplined',
+      date: formatDate(0), // Today
+      notes: 'Bullish breakout from the key demand zone. Entry was pristine, stayed very calm throughout the trade.',
+    },
+    {
+      id: `demo-trade-2`,
+      pair: 'XAUUSD',
+      type: 'SELL',
+      risk: 150,
+      pl: -150,
+      emotion: 'Greedy',
+      date: formatDate(-1), // Yesterday
+      notes: 'Attempted to short the retail resistance, got caught in a liquidity sweep. Violated maximum size limit.',
+    },
+    {
+      id: `demo-trade-3`,
+      pair: 'EURUSD',
+      type: 'BUY',
+      risk: 100,
+      pl: 200,
+      emotion: 'Calm',
+      date: formatDate(-3), // 3 days ago
+      notes: 'Standard London session continuation play. Hit 1:2 Risk-to-Reward ratio target flawlessly.',
+    },
+    {
+      id: `demo-trade-4`,
+      pair: 'GBPUSD',
+      type: 'SELL',
+      risk: 200,
+      pl: 600,
+      emotion: 'Confident',
+      date: formatDate(-4), // 4 days ago
+      notes: 'Faded the retail trap on GBPUSD during key news release. Very clean execution.',
+    },
+    {
+      id: `demo-trade-5`,
+      pair: 'BTCUSD',
+      type: 'BUY',
+      risk: 300,
+      pl: -300,
+      emotion: 'Revenge',
+      date: formatDate(-5), // 5 days ago
+      notes: 'Over-leveraged. Overslept and missed original entry, chased price which reversed. Clear violation of setup rule 4.',
+    },
+    {
+      id: `demo-trade-6`,
+      pair: 'NAS100',
+      type: 'SELL',
+      risk: 150,
+      pl: 300,
+      emotion: 'Disciplined',
+      date: formatDate(-7), // 7 days ago
+      notes: 'Premium Fibonacci retracement block short setup. Held until the 2.0 RR targets.',
+    },
+    {
+      id: `demo-trade-7`,
+      pair: 'XAUUSD',
+      type: 'BUY',
+      risk: 200,
+      pl: -200,
+      emotion: 'FOMO',
+      date: formatDate(-8), // 8 days ago
+      notes: 'Entered on minor green candle because of fear of missing the gold breakout. Terrible entry location.',
+    }
+  ];
+};
+
 export default function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('journaly_theme');
+    return (saved === 'light' || saved === 'dark') ? saved : 'dark';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'light') {
+      root.classList.add('light');
+    } else {
+      root.classList.remove('light');
+    }
+    localStorage.setItem('journaly_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
   const [user, setUser] = useState<{ email: string; name: string; avatar: string } | null>(() => {
     const saved = localStorage.getItem('tradezella_journal_user');
     try {
@@ -46,6 +156,24 @@ export default function App() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [utcTime, setUtcTime] = useState('');
   const [showNotification, setShowNotification] = useState<string | null>(null);
+
+  // Admin diagnostics telemetry hook states
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [adminData, setAdminData] = useState<AdminDiagnosticsData | null>(null);
+  const [isAdminLoading, setIsAdminLoading] = useState(false);
+
+  const handleOpenAdminPanel = async () => {
+    setShowAdminPanel(true);
+    setIsAdminLoading(true);
+    try {
+      const data = await getAdminDiagnostics();
+      setAdminData(data);
+    } catch (err) {
+      console.error("Failed to fetch admin telemetry:", err);
+    } finally {
+      setIsAdminLoading(false);
+    }
+  };
 
   // Initialize data from Firestore and Sync locally
   useEffect(() => {
@@ -79,6 +207,7 @@ export default function App() {
             setTrades([]);
           }
         } else {
+          // Initialize completely empty account for brand new user as requested (0 PNL)
           setTrades([]);
         }
         setIsLoaded(true);
@@ -93,6 +222,9 @@ export default function App() {
         } catch {
           setTrades([]);
         }
+      } else {
+        // Initialize completely empty account for brand new user as requested (0 PNL)
+        setTrades([]);
       }
       setIsLoaded(true);
     });
@@ -196,8 +328,12 @@ export default function App() {
   const currentStats = calculateStats(monthlyTrades);
 
   // Filter trades for bottom table if a date is selected from the strip
-  const visibleTrades = selectedDateFilter
+  const dateTrades = selectedDateFilter 
     ? monthlyTrades.filter((t) => t.date === selectedDateFilter)
+    : [];
+  
+  const visibleTrades = selectedDateFilter
+    ? (dateTrades.length > 0 ? dateTrades : monthlyTrades)
     : monthlyTrades;
 
   // Add new trade
@@ -329,7 +465,7 @@ export default function App() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black font-display tracking-tight text-white uppercase">
+                <h1 className="text-lg font-black font-display tracking-tight text-zinc-100 uppercase">
                   Journaly
                 </h1>
                 <span className="text-[9px] uppercase font-bold text-emerald-400 border border-emerald-550/30 px-1 py-0.5 rounded leading-none">
@@ -346,7 +482,7 @@ export default function App() {
             {user && (
               <div id="user-profile-badge" className="flex items-center gap-2.5 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-xl">
                 <img src={user.avatar} alt={user.name} className="w-5 h-5 rounded-full object-cover border border-emerald-500/40" />
-                <span className="text-[11px] font-bold text-zinc-200">{user.email}</span>
+                <span className="text-[11px] font-bold text-zinc-100">{user.name}</span>
                 <button
                   onClick={handleSignOut}
                   className="ml-1 text-zinc-500 hover:text-rose-400 transition-colors p-0.5 cursor-pointer flex items-center justify-center"
@@ -357,6 +493,29 @@ export default function App() {
                 </button>
               </div>
             )}
+
+            {/* Admin Diagnostics button - ONLY for toolaoilqbi@gmail.com */}
+            {user?.email.toLowerCase() === 'toolaoilqbi@gmail.com' && (
+              <button
+                onClick={handleOpenAdminPanel}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-450 text-zinc-950 font-bold rounded-xl transition-all duration-150 shadow-md shadow-emerald-500/10 cursor-pointer text-[11px] select-none h-[32px] shrink-0"
+                title="Open Global Database Telemetry"
+                id="btn-admin-telemetry"
+              >
+                <Database size={12} className="stroke-[2.5]" />
+                <span>Diagnostics</span>
+              </button>
+            )}
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="flex items-center justify-center p-2 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-750 text-zinc-400 hover:text-zinc-200 rounded-xl transition-all duration-150 cursor-pointer h-[32px] w-[32px]"
+              title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+              id="btn-theme-toggle"
+            >
+              {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+            </button>
 
             {/* Live UTC Clock */}
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900/60 border border-zinc-850 rounded-lg text-emerald-400 font-mono text-[11px]" title="Institutional standard trading time">
@@ -463,6 +622,9 @@ export default function App() {
         <section aria-label="Trade History" id="section-trades-history-table">
           <TradesTable 
             trades={visibleTrades} 
+            allTrades={monthlyTrades}
+            selectedDateFilter={selectedDateFilter}
+            onClearDateFilter={() => setSelectedDateFilter(null)}
             onDeleteTrade={handleDeleteTrade} 
             onEditTrade={handleEditTrade}
           />
@@ -483,6 +645,15 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Admin Diagnostics Overlay Panel */}
+      {showAdminPanel && (
+        <AdminDiagnostics 
+          onClose={() => setShowAdminPanel(false)} 
+          data={adminData} 
+          isLoading={isAdminLoading} 
+        />
+      )}
 
     </div>
   );

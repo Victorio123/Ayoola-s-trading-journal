@@ -216,3 +216,230 @@ export async function saveUserStartingBalance(email: string, balance: number): P
     console.error('Error saving starting balance to Firestore:', error);
   }
 }
+
+export interface AdminDiagnosticsData {
+  totalUsers: number;
+  totalTrades: number;
+  userBreakdown: {
+    email: string;
+    tradeCount: number;
+    startingBalance: number | null;
+  }[];
+  globalPairs: { pair: string; count: number }[];
+}
+
+// Fetch all trades and profiles globally to construct admin analytics
+export async function getAdminDiagnostics(): Promise<AdminDiagnosticsData> {
+  const allEmails = new Set<string>();
+  const tradeCounts = new Map<string, number>();
+  const pairCounts = new Map<string, number>();
+  const profilesMap = new Map<string, number>();
+
+  try {
+    // 1. Fetch trades across ALL users in Firestore
+    const tradesCol = collection(db, 'trades');
+    const tradesSnapshot = await getDocs(tradesCol);
+    
+    tradesSnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const email = data.email ? String(data.email).toLowerCase() : '';
+      const pair = data.pair ? String(data.pair).toUpperCase() : '';
+      
+      if (email) {
+        allEmails.add(email);
+        tradeCounts.set(email, (tradeCounts.get(email) || 0) + 1);
+      }
+      if (pair) {
+        pairCounts.set(pair, (pairCounts.get(pair) || 0) + 1);
+      }
+    });
+
+    // 2. Fetch profiles globally
+    const profilesCol = collection(db, 'profiles');
+    const profilesSnapshot = await getDocs(profilesCol);
+    
+    profilesSnapshot.forEach((docSnap) => {
+      const email = docSnap.id.toLowerCase();
+      const data = docSnap.data();
+      if (email) {
+        allEmails.add(email);
+        if (typeof data.startingBalance === 'number') {
+          profilesMap.set(email, data.startingBalance);
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error('Error during admin telemetry sync:', error);
+  }
+
+  // Construct structured breakdown list
+  const userBreakdown = Array.from(allEmails).map((email) => ({
+    email,
+    tradeCount: tradeCounts.get(email) || 0,
+    startingBalance: profilesMap.get(email) ?? null
+  })).sort((a, b) => b.tradeCount - a.tradeCount);
+
+  // Sort global pairs by occurrencefrequency 
+  const globalPairs = Array.from(pairCounts.entries()).map(([pair, count]) => ({
+    pair,
+    count
+  })).sort((a, b) => b.count - a.count);
+
+  const totalTradesCount = Array.from(tradeCounts.values()).reduce((sum, val) => sum + val, 0);
+
+  return {
+    totalUsers: allEmails.size,
+    totalTrades: totalTradesCount,
+    userBreakdown,
+    globalPairs
+  };
+}
+
+// User Profile Data structure for programmatic checks
+export interface UserProfileData {
+  email: string;
+  name: string;
+  password?: string;
+  isVerified?: boolean;
+  verificationCode?: string;
+  startingBalance?: number;
+  createdAt?: any;
+}
+
+// Sync user logging in via Google seamlessly
+export async function syncGoogleUser(email: string, name: string): Promise<void> {
+  const docPath = `profiles/${email.toLowerCase().trim()}`;
+  try {
+    const docRef = doc(db, 'profiles', email.toLowerCase().trim());
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) {
+      // Clear any orphaned trades from older test runs under this shared account before starting clean
+      await clearAllUserTrades(email.toLowerCase().trim());
+      await setDoc(docRef, {
+        name: name.trim(),
+        isVerified: true,
+        startingBalance: 0,
+        createdAt: new Date(),
+        isGoogleAuth: true
+      }, { merge: true });
+    }
+  } catch (error: any) {
+    if (error?.code === 'permission-denied' || error?.message?.includes('permission')) {
+      handleFirestoreError(error, OperationType.WRITE, docPath);
+    }
+    console.error('Error syncing Google user:', error);
+  }
+}
+
+// Authenticate email + password
+export async function authenticateUser(email: string, passwordAttempt: string): Promise<{
+  success: boolean;
+  error?: string;
+  user?: { email: string; name: string; avatar: string };
+  needsVerification?: boolean;
+}> {
+  const docPath = `profiles/${email.toLowerCase().trim()}`;
+  try {
+    const docRef = doc(db, 'profiles', email.toLowerCase().trim());
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      return { success: false, error: 'No account found with this email. Please Sign Up.' };
+    }
+    
+    const data = docSnap.data();
+    
+    // Check password
+    if (data.password !== passwordAttempt) {
+      return { success: false, error: 'Incorrect password. Access denied.' };
+    }
+    
+    const userPayload = {
+      email: email.toLowerCase().trim(),
+      name: data.name || email.split('@')[0],
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${email.split('@')[0]}&backgroundColor=10b981&textColor=09090b`
+    };
+
+    // Check if verified
+    if (data.isVerified === false) {
+      return { 
+        success: false, 
+        needsVerification: true, 
+        user: userPayload
+      };
+    }
+    
+    return {
+      success: true,
+      user: userPayload
+    };
+  } catch (err: any) {
+    console.error('Error authenticating user in Firestore:', err);
+    return { success: false, error: 'Secure database communication error.' };
+  }
+}
+
+// Register as a new user in Firestore
+export async function registerUser(email: string, name: string, passwordAttempt: string, verificationCode: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const docPath = `profiles/${email.toLowerCase().trim()}`;
+  try {
+    const docRef = doc(db, 'profiles', email.toLowerCase().trim());
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return { success: false, error: 'Account already exists. Please Log In instead.' };
+    }
+    
+    // Clear any orphaned trades from older test runs under this shared account before starting clean
+    await clearAllUserTrades(email.toLowerCase().trim());
+    
+    await setDoc(docRef, {
+      name: name.trim(),
+      password: passwordAttempt,
+      verificationCode: verificationCode,
+      isVerified: false,
+      startingBalance: 0,
+      createdAt: new Date()
+    }, { merge: true });
+    
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error registering user in Firestore:', err);
+    return { success: false, error: 'Database enrollment error.' };
+  }
+}
+
+// Verify of 6-digit confirmation code
+export async function verifyUserCode(email: string, codeAttempt: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const docPath = `profiles/${email.toLowerCase().trim()}`;
+  try {
+    const docRef = doc(db, 'profiles', email.toLowerCase().trim());
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      return { success: false, error: 'Profile not found.' };
+    }
+    
+    const data = docSnap.data();
+    if (String(data.verificationCode).trim() !== String(codeAttempt).trim()) {
+      return { success: false, error: 'Invalid verification code. Please request a new one or check the telemetry dashboard.' };
+    }
+    
+    await setDoc(docRef, {
+      isVerified: true
+    }, { merge: true });
+    
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error verifying user verification code:', err);
+    return { success: false, error: 'Database verification update failed.' };
+  }
+}
+
+
