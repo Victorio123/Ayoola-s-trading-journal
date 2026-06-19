@@ -54,8 +54,8 @@ export default async function handler(req: any, res: any) {
     });
 
     const subject = isReset 
-      ? `Journaly Password Reset Code: ${code}` 
-      : `Journaly login verification details: ${code}`;
+      ? `Reset Your Journaly Password` 
+      : `Your Journaly Verification Code`;
 
     const textContent = isReset
       ? `Hello,
@@ -83,41 +83,77 @@ If you didn't request this code, you can safely ignore this email.
 Best regards,
 Journaly Team`;
 
-    const htmlContent = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 450px; margin: 0 auto; color: #333333; line-height: 1.6; font-size: 14px; border: 1px solid #e4e4e7; border-radius: 12px; padding: 24px; background-color: #ffffff;">
-        <!-- Header with stylized J display picture -->
-        <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
-          <tr>
-            <td style="vertical-align: middle; padding-right: 12px;">
-              <div style="width: 40px; height: 40px; line-height: 40px; border-radius: 20px; background-color: #10b981; text-align: center; color: #ffffff; font-weight: 800; font-size: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                J
-              </div>
-            </td>
-            <td style="vertical-align: middle;">
-              <span style="font-size: 16px; font-weight: 800; color: #18181b; letter-spacing: -0.01em;">Journaly</span>
-              <span style="display: block; font-size: 11px; color: #71717a; font-weight: 500; margin-top: 1px;">Security Team</span>
-            </td>
-          </tr>
-        </table>
-        
-        <p style="margin-top: 0; color: #3f3f46;">Hello,</p>
-        
-        <p style="color: #3f3f46;">
-          ${isReset 
-            ? "We received a request to reset your password. Use the following code to authorize this action:" 
-            : "We received a request to access your account. Please use the following code to log in safely:"
-          }
-        </p>
-        
-        <div style="background-color: #f4f4f5; border-radius: 8px; padding: 18px; margin: 24px 0; text-align: center; font-size: 26px; font-weight: 800; letter-spacing: 6px; color: #10b981; border: 1px solid #e4e4e7; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
-          ${code}
-        </div>
-        
-        <p style="color: #71717a; font-size: 12px; margin-top: 32px; border-top: 1px solid #e4e4e7; padding-top: 16px; line-height: 1.5;">
-          This temporary security code is valid for single use. If you did not make this request, you can safely ignore this message. Do not reply to this automated transmission.
-        </p>
-      </div>
-    `;
+    const htmlContent = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${subject}</title>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f9fafb; padding: 40px 20px;">
+      <tr>
+        <td align="center">
+          <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 450px; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 12px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <!-- Header with J Logo -->
+            <tr>
+              <td>
+                <table border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                  <tr>
+                    <td style="padding-right: 12px; vertical-align: middle;">
+                      <div style="width: 42px; height: 42px; line-height: 42px; border-radius: 10px; background-color: #10b981; text-align: center; color: #ffffff; font-weight: 800; font-size: 22px;">J</div>
+                    </td>
+                    <td style="vertical-align: middle;">
+                      <div style="font-size: 18px; font-weight: 800; color: #18181b; letter-spacing: -0.02em; line-height: 1.2;">Journaly</div>
+                      <div style="font-size: 11px; color: #71717a; font-weight: 500; margin-top: 2px;">Security Team</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            
+            <!-- Message Body -->
+            <tr>
+              <td style="font-size: 14px; line-height: 1.6; color: #27272a;">
+                <p style="margin-top: 0; font-size: 15px; font-weight: 600; color: #18181b;">Hello,</p>
+                <p style="margin-bottom: 24px;">
+                  ${isReset 
+                    ? "We received a request to reset your password. Use the following code to authorize this action:" 
+                    : "We received a request to access your account. Please use the following code to log in safely:"
+                  }
+                </p>
+              </td>
+            </tr>
+            
+            <!-- Code Block -->
+            <tr>
+              <td align="center" style="padding-bottom: 8px;">
+                <div style="background-color: #f4f4f5; border-radius: 8px; padding: 18px 10px; text-align: center; font-size: 28px; font-weight: 800; letter-spacing: 6px; color: #10b981; border: 1px solid #e4e4e7; font-family: 'Courier New', Courier, monospace; max-width: 280px; margin: 0 auto;">
+                  ${code}
+                </div>
+              </td>
+            </tr>
+            
+            <!-- Context Security Note -->
+            <tr>
+              <td style="font-size: 12px; line-height: 1.6; color: #71717a; padding-top: 24px;">
+                <p style="margin: 0; border-top: 1px solid #e4e4e7; padding-top: 20px;">
+                  This verification code is temporary and valid for a single session. 
+                  If you did not make this request or sign in, you can safely ignore this email. 
+                  Do not share this code with anyone.
+                </p>
+                <p style="margin: 16px 0 0 0; font-size: 11px; color: #a1a1aa; line-height: 1.4; text-align: center;">
+                  Journaly Inc. &bull; 100 Pine Street, San Francisco, CA 94111<br />
+                  &copy; 2026 Journaly. This security notification is automated.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
 
     const mailOptions = {
       from: `"${fromName}" <${fromEmail}>`,
@@ -126,7 +162,12 @@ Journaly Team`;
       text: textContent,
       html: htmlContent,
       headers: {
-        "X-Entity-Ref-ID": `${Date.now()}_ref`
+        "X-Entity-Ref-ID": `${Date.now()}_ref`,
+        "Importance": "high",
+        "Priority": "Urgent",
+        "X-Priority": "1",
+        "Auto-Submitted": "auto-generated",
+        "X-Auto-Response-Suppress": "All"
       }
     };
 
